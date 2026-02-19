@@ -973,6 +973,9 @@ input[type="date"] {
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    white-space: nowrap;  /* 防止文本换行 */
+    min-width: fit-content; /* 根据内容调整最小宽度 */
+    width: auto; /* 自动宽度 */
 }
 
 .stats-link:hover {
@@ -989,6 +992,8 @@ input[type="date"] {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap; /* 允许在小屏幕上换行 */
+    gap: 10px; /* 添加间距 */
 }
 
 .panel-header h2 {
@@ -1000,10 +1005,21 @@ input[type="date"] {
     align-items: center;
     gap: 8px;
     margin: 0;
+    white-space: nowrap; /* 防止标题换行 */
+    flex-shrink: 0; /* 防止标题被压缩 */
 }
 
 .panel-header h2::before {
     content: "⚙️";
     font-size: 1.4rem;
     opacity: 0.9;
+}
+
+/* 按钮组容器 */
+.panel-header > div {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap; /* 允许在小屏幕上换行 */
+    justify-content: flex-end;
+    min-width: fit-content; /* 根据内容调整最小宽度 */
 }

@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCB视频检测</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* 视频检测专用样式 */
+        .video-container {
+            display: flex;
+            height: 100vh;
+            padding: 16px;
+            gap: 16px;
+            background: #1e1f2c;
+        }
+
+        /* 左侧控制面板 */
+        .video-control-panel {
+            width: 300px;
+            background-color: #2a2c3b;
+            border: 1px solid #3e4052;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .video-panel-header {
+            padding: 18px 20px;
+            background: #1b1e2a;
+            border-bottom: 2px solid #3a6ea5;
+        }
+
+        .video-panel-header h2 {
+            font-size: 1.3rem;
+            font-weight: 500;
+            color: #fff;
+            margin: 0;
+        }
+
+        .video-panel-content {
+            padding: 20px 18px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .video-panel-section {
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #3e4055;
+        }
+
+        .video-panel-section:last-child {
+            border-bottom: none;
+        }
+
+        .video-section-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #b0c4de;
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+        }
+
+        .video-btn {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #2b3d5c;
+            border: 1px solid #4b6f9a;
+            color: #ecf3ff;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .video-btn:hover:not(:disabled) {
+            background: #31639c;
+            border-color: #7aa2d0;
+        }
+
+        .video-btn.primary {
+            background: #2a4b78;
+            border-color: #5e87b9;
+        }
+
+        .video-btn.success {
+            background: #2d5940;
+            border-color: #3f8364;
+        }
+
+        .video-btn.danger {
+            background: #5a353f;
+            border-color: #a56b6b;
+            color: #ffd7d7;
+        }
+
+        .video-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .video-status {
+            background: #1f2130;
+            border: 1px solid #3e4055;
+            padding: 12px;
+            margin-top: 16px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+        }
+
+        .status-label {
+            color: #99a6c2;
+        }
+
+        .status-value {
+            color: #d4e0fc;
+            font-weight: 600;
+        }
+
+        .status-value.has-board {
+            color: #4f9e7a;
+        }
+
+        .status-value.no-board {
+            color: #f05454;
+        }
+
+        .status-value.has-detection {
+            color: #5f9df3;
+        }
+
+        /* 右侧内容区域 */
+        .video-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow: hidden;
+        }
+
+        /* 上半部分 - 双栏显示 */
+        .video-top {
+            flex: 1;
+            display: flex;
+            gap: 16px;
+            min-height: 0;
+        }
+
+        .video-card {
+            flex: 1;
+            background: #2a2c3b;
+            border: 1px solid #3e4052;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .video-card-header {
+            padding: 12px 16px;
+            background: #1b1e2a;
+            border-bottom: 2px solid #3a6ea5;
+        }
+
+        .video-card-header h3 {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #d0dcf0;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .video-card-body {
+            flex: 1;
+            padding: 16px;
+            background: #212332;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .video-frame {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border: 2px solid #3b5580;
+            background: #141824;
+        }
+
+        /* 下半部分 - 缺陷信息 */
+        .video-bottom {
+            height: 200px;
+            background: #2a2c3b;
+            border: 1px solid #3e4052;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .video-bottom-header {
+            padding: 12px 16px;
+            background: #1b1e2a;
+            border-bottom: 2px solid #c05a5a;
+        }
+
+        .video-bottom-header h3 {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #fff;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .defect-list-container {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            background: #212332;
+        }
+
+        .defect-item {
+            background: #1f2537;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-left: 6px solid;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+        }
+
+        .defect-item.missing_hole { border-left-color: #f05454; }
+        .defect-item.mouse_bite { border-left-color: #8ecf8e; }
+        .defect-item.short_circuit { border-left-color: #5f9df3; }
+
+        .defect-detail {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .defect-label {
+            font-size: 0.7rem;
+            color: #99a6c2;
+            text-transform: uppercase;
+        }
+
+        .defect-value {
+            font-size: 0.9rem;
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+
+        .no-defect-message {
+            text-align: center;
+            padding: 40px 16px;
+            color: #6f7c9f;
+            border: 1px dashed #4b5270;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: #7aa2d0;
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 6px 12px;
+            border: 1px solid #4b6f9a;
+            margin-top: 10px;
+        }
+
+        .back-link:hover {
+            background: #2a4b78;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="video-container">
+        <!-- 左侧控制面板 -->
+        <div class="video-control-panel">
+            <div class="video-panel-header">
+                <h2>PCB视频检测</h2>
+                <a href="/" class="back-link">← 返回图片检测</a>
+            </div>
+            <div class="video-panel-content">
+                <!-- 控制按钮组 -->
+                <div class="video-panel-section">
+                    <div class="video-section-title">控制按钮</div>
+                    <button id="startCameraBtn" class="video-btn primary">
+                        📷 启动摄像头
+                    </button>
+                    <button id="detectBtn" class="video-btn success" disabled>
+                        🔍 识别缺陷
+                    </button>
+                    <button id="saveBtn" class="video-btn" disabled>
+                        💾 保存结果
+                    </button>
+                    <button id="stopCameraBtn" class="video-btn danger" disabled>
+                        ⏹ 关闭摄像头
+                    </button>
+                </div>
+
+                <!-- 状态信息 -->
+                <div class="video-panel-section">
+                    <div class="video-section-title">状态信息</div>
+                    <div class="video-status">
+                        <div class="status-item">
+                            <span class="status-label">摄像头:</span>
+                            <span class="status-value" id="cameraStatus">未连接</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">电路板检测:</span>
+                            <span class="status-value" id="boardStatus">未检测</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">YOLO检测:</span>
+                            <span class="status-value" id="yoloStatus">未检测</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">缺陷数量:</span>
+                            <span class="status-value" id="defectCount">0</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">保存次数:</span>
+                            <span class="status-value" id="saveCount">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 提示信息 -->
+                <div class="video-panel-section">
+                    <div class="video-section-title">使用说明</div>
+                    <div style="color: #99a6c2; font-size: 0.85rem; line-height: 1.6;">
+                        <p>1. 点击"启动摄像头"开始采集</p>
+                        <p>2. 系统自动检测画面中的电路板（绿色框）</p>
+                        <p>3. 点击"识别缺陷"对当前帧进行YOLO检测</p>
+                        <p>4. 点击"保存结果"保存到数据库（保存后需再次检测）</p>
+                        <p>5. 每张图片只检测一个电路板</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧内容区域 -->
+        <div class="video-content">
+            <!-- 上半部分：双栏显示 -->
+            <div class="video-top">
+                <!-- 左侧：摄像头画面 -->
+                <div class="video-card">
+                    <div class="video-card-header">
+                        <h3>📹 摄像头画面（电路板检测）</h3>
+                    </div>
+                    <div class="video-card-body">
+                        <img id="cameraFeed" class="video-frame" src="" alt="摄像头画面">
+                    </div>
+                </div>
+                <!-- 右侧：YOLO处理后的图像 -->
+                <div class="video-card">
+                    <div class="video-card-header">
+                        <h3>🔬 YOLO缺陷检测结果</h3>
+                    </div>
+                    <div class="video-card-body">
+                        <img id="yoloResult" class="video-frame" src="" alt="YOLO检测结果">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 下半部分：缺陷信息列表 -->
+            <div class="video-bottom">
+                <div class="video-bottom-header">
+                    <h3>📋 缺陷信息列表</h3>
+                </div>
+                <div class="defect-list-container" id="defectList">
+                    <div class="no-defect-message">暂无缺陷信息，请点击"识别缺陷"</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 视频检测JavaScript
+        const video = document.createElement('video');
+        let mediaStream = null;
+        let sessionId = null;
+        let isCameraActive = false;
+        let animationFrame = null;
+        let saveCount = 0;
+        let hasYoloResult = false;  // 标记是否有YOLO检测结果
+        let lastSavedDetection = null;  // 记录上次保存的检测结果，防止重复保存
+
+        // DOM元素
+        const cameraFeed = document.getElementById('cameraFeed');
+        const yoloResult = document.getElementById('yoloResult');
+        const defectList = document.getElementById('defectList');
+        const startCameraBtn = document.getElementById('startCameraBtn');
+        const stopCameraBtn = document.getElementById('stopCameraBtn');
+        const detectBtn = document.getElementById('detectBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const cameraStatus = document.getElementById('cameraStatus');
+        const boardStatus = document.getElementById('boardStatus');
+        const yoloStatus = document.getElementById('yoloStatus');
+        const defectCountSpan = document.getElementById('defectCount');
+        const saveCountSpan = document.getElementById('saveCount');
+
+        // 生成会话ID
+        function generateSessionId() {
+            return 'video_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // 更新保存按钮状态
+        function updateSaveButton() {
+            // 保存按钮可用条件：有YOLO检测结果 且 当前检测结果与上次保存的不同
+            if (hasYoloResult && lastSavedDetection !== sessionId + '_' + hasYoloResult) {
+                saveBtn.disabled = false;
+            } else {
+                saveBtn.disabled = true;
+            }
+        }
+
+        // 启动摄像头
+        startCameraBtn.addEventListener('click', async () => {
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: 1280,
+                        height: 720,
+                        facingMode: 'environment'  // 优先使用后置摄像头
+                    }
+                });
+
+                video.srcObject = mediaStream;
+                video.play();
+
+                // 创建会话
+                sessionId = generateSessionId();
+
+                // 启动帧处理
+                isCameraActive = true;
+                processVideoFrame();
+
+                // 更新UI
+                startCameraBtn.disabled = true;
+                stopCameraBtn.disabled = false;
+                detectBtn.disabled = false;
+                cameraStatus.textContent = '已连接';
+                cameraStatus.style.color = '#4f9e7a';
+
+                // 重置状态
+                hasYoloResult = false;
+                lastSavedDetection = null;
+                yoloStatus.textContent = '未检测';
+                yoloStatus.className = 'status-value';
+                updateSaveButton();
+
+                showToast('摄像头启动成功', 'success');
+            } catch (error) {
+                console.error('摄像头启动失败:', error);
+                showToast('摄像头启动失败: ' + error.message, 'error');
+            }
+        });
+
+        // 停止摄像头
+        stopCameraBtn.addEventListener('click', () => {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+
+            video.srcObject = null;
+            isCameraActive = false;
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+                animationFrame = null;
+            }
+
+            // 清除会话
+            if (sessionId) {
+                fetch('/api/video/clear_session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+                sessionId = null;
+            }
+
+            // 更新UI
+            startCameraBtn.disabled = false;
+            stopCameraBtn.disabled = true;
+            detectBtn.disabled = true;
+            saveBtn.disabled = true;
+            cameraStatus.textContent = '未连接';
+            cameraStatus.style.color = '';
+            boardStatus.textContent = '未检测';
+            boardStatus.className = 'status-value';
+            yoloStatus.textContent = '未检测';
+            yoloStatus.className = 'status-value';
+
+            cameraFeed.src = '';
+            yoloResult.src = '';
+
+            showToast('摄像头已关闭', 'info');
+        });
+
+        // 处理视频帧
+        async function processVideoFrame() {
+            if (!isCameraActive || !video.videoWidth) {
+                animationFrame = requestAnimationFrame(processVideoFrame);
+                return;
+            }
+
+            // 创建画布并绘制当前帧
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // 转换为base64
+            const imageData = canvas.toDataURL('image/jpeg', 0.8);
+
+            try {
+                // 发送到后端处理
+                const response = await fetch('/api/video/process_frame', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        image: imageData
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 更新摄像头画面
+                    cameraFeed.src = result.processed_image;
+
+                    // 更新电路板检测状态
+                    if (result.has_board) {
+                        boardStatus.textContent = '已检测到';
+                        boardStatus.className = 'status-value has-board';
+                        detectBtn.disabled = false;  // 检测到电路板后才能进行YOLO检测
+                    } else {
+                        boardStatus.textContent = '未检测到';
+                        boardStatus.className = 'status-value no-board';
+                        detectBtn.disabled = true;  // 没有电路板时禁用识别按钮
+                    }
+                }
+            } catch (error) {
+                console.error('处理帧失败:', error);
+            }
+
+            animationFrame = requestAnimationFrame(processVideoFrame);
+        }
+
+        // 识别缺陷
+        detectBtn.addEventListener('click', async () => {
+            if (!sessionId) {
+                showToast('请先启动摄像头', 'error');
+                return;
+            }
+
+            detectBtn.disabled = true;
+            detectBtn.innerHTML = '⏳ 识别中...';
+
+            try {
+                const response = await fetch('/api/video/detect_defect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 更新YOLO结果图像
+                    yoloResult.src = result.yolo_image;
+
+                    // 更新缺陷列表
+                    updateDefectList(result.detections);
+
+                    // 更新缺陷数量
+                    defectCountSpan.textContent = result.detections.length;
+
+                    // 更新YOLO检测状态
+                    hasYoloResult = true;
+                    yoloStatus.textContent = '已检测';
+                    yoloStatus.className = 'status-value has-detection';
+
+                    // 重置上次保存的记录，允许保存这个新的检测结果
+                    lastSavedDetection = null;
+
+                    // 更新保存按钮状态
+                    updateSaveButton();
+
+                    showToast('缺陷识别完成', 'success');
+                } else {
+                    showToast(result.error || '识别失败', 'error');
+                }
+            } catch (error) {
+                console.error('识别失败:', error);
+                showToast('识别失败: ' + error.message, 'error');
+            } finally {
+                detectBtn.disabled = false;
+                detectBtn.innerHTML = '🔍 识别缺陷';
+            }
+        });
+
+        // 保存结果
+        saveBtn.addEventListener('click', async () => {
+            if (!sessionId) {
+                showToast('请先启动摄像头', 'error');
+                return;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '⏳ 保存中...';
+
+            try {
+                const response = await fetch('/api/video/save_result', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    saveCount++;
+                    saveCountSpan.textContent = saveCount;
+
+                    // 记录这次保存的检测结果，防止重复保存
+                    lastSavedDetection = sessionId + '_' + hasYoloResult;
+
+                    // 更新保存按钮状态
+                    updateSaveButton();
+
+                    showToast('保存成功', 'success');
+                } else {
+                    showToast(result.error || '保存失败', 'error');
+                }
+            } catch (error) {
+                console.error('保存失败:', error);
+                showToast('保存失败: ' + error.message, 'error');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '💾 保存结果';
+                // 注意：这里重新启用保存按钮，但updateSaveButton()会根据条件决定是否真的可用
+                updateSaveButton();
+            }
+        });
+
+        // 更新缺陷列表
+        function updateDefectList(detections) {
+            if (!detections || detections.length === 0) {
+                defectList.innerHTML = '<div class="no-defect-message">未检测到缺陷</div>';
+                return;
+            }
+
+            let html = '';
+            detections.forEach(defect => {
+                const defectClass = defect.defect_type_en || 'missing_hole';
+                html += `
+                    <div class="defect-item ${defectClass}">
+                        <div class="defect-detail">
+                            <span class="defect-label">类型</span>
+                            <span class="defect-value">${defect.defect_type}</span>
+                        </div>
+                        <div class="defect-detail">
+                            <span class="defect-label">置信度</span>
+                            <span class="defect-value">${(defect.confidence * 100).toFixed(1)}%</span>
+                        </div>
+                        <div class="defect-detail">
+                            <span class="defect-label">位置</span>
+                            <span class="defect-value">[${defect.coordinates[0]}, ${defect.coordinates[1]}]</span>
+                        </div>
+                        <div class="defect-detail">
+                            <span class="defect-label">尺寸</span>
+                            <span class="defect-value">${defect.width} x ${defect.height}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            defectList.innerHTML = html;
+        }
+
+        // 显示提示消息
+        function showToast(message, type = 'info') {
+            let toast = document.getElementById('toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast';
+                toast.className = 'toast';
+                document.body.appendChild(toast);
+            }
+
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // 页面关闭前清理
+        window.addEventListener('beforeunload', () => {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+            }
+        });
+    </script>
+</body>
+</html>
