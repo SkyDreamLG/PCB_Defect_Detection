@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCB视觉检测平台</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧控制面板 -->
+        <div class="control-panel">
+            <div class="panel-header">
+                <h2>PCB 视觉检测</h2>
+            </div>
+            <div class="panel-content">
+                <!-- 导航按钮 -->
+                <div class="nav-buttons">
+                    <div class="nav-btn active" onclick="switchMode('detect')" id="navDetect">检测模式</div>
+                    <div class="nav-btn" onclick="switchMode('history')" id="navHistory">历史记录</div>
+                </div>
+
+                <!-- 检测模式内容 -->
+                <div id="detectMode">
+                    <!-- 上传区域 -->
+                    <div class="upload-section" id="uploadSection">
+                        <div class="section-title"><i>⏺</i> 上传图像</div>
+                        <div class="upload-area" id="dropZone">
+                            <div class="upload-icon">⛁</div>
+                            <div class="upload-text">拖放文件或点击选择</div>
+                            <div class="upload-hint">支持 JPG / PNG / JPEG</div>
+                            <input type="file" id="fileInput" accept="image/*" multiple style="display: none;">
+                        </div>
+                    </div>
+
+                    <!-- 文件列表 -->
+                    <div class="panel-section" id="fileListSection" style="display: none;">
+                        <div class="section-title"><i>⏺</i> 已选清单</div>
+                        <div class="file-list-container">
+                            <div class="file-list-header">
+                                <h4><span>📋</span> 待检文件 <span class="file-count" id="fileCount">0</span></h4>
+                                <div class="file-list-actions">
+                                    <button class="file-action-btn" id="clearAllFilesBtn">清空</button>
+                                </div>
+                            </div>
+                            <div class="file-list" id="fileList"></div>
+                            <button class="add-more-btn" id="addMoreBtn">＋ 添加更多</button>
+                        </div>
+                    </div>
+
+                    <!-- 检测参数 -->
+                    <div class="panel-section">
+                        <div class="section-title"><i>⏺</i> 参数配置</div>
+                        <div class="slider-container">
+                            <div class="slider-label"><span>置信度阈值</span><span class="slider-value" id="confValue">0.25</span></div>
+                            <input type="range" id="confThreshold" min="0" max="1" step="0.05" value="0.25">
+                        </div>
+                        <div class="slider-container">
+                            <div class="slider-label"><span>IoU 阈值</span><span class="slider-value" id="iouValue">0.45</span></div>
+                            <input type="range" id="iouThreshold" min="0" max="1" step="0.05" value="0.45">
+                        </div>
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <div class="panel-section">
+                        <button id="detectBtn" class="btn btn-primary">▶ 启动检测</button>
+                        <button id="downloadResultsBtn" class="btn btn-success">⬇ 下载结果包</button>
+                        <button id="clearResultsBtn" class="btn btn-danger">✕ 清空结果</button>
+                    </div>
+
+                    <!-- 进度指示 -->
+                    <div class="panel-section">
+                        <div class="section-title"><i>⏺</i> 任务进度</div>
+                        <div class="progress-container">
+                            <div class="progress-header"><span>批处理</span><span id="progressDetail">0/0</span></div>
+                            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                            <div style="text-align:right; margin-top:6px; font-size:0.75rem;" id="progressText">0%</div>
+                        </div>
+                    </div>
+
+                    <!-- 系统状态 -->
+                    <div class="panel-section">
+                        <div class="section-title"><i>⏺</i> 系统状态</div>
+                        <div class="status-grid">
+                            <div class="status-item"><div class="status-label">模型</div><div class="status-value" id="modelStatus">已加载</div></div>
+                            <div class="status-item"><div class="status-label">待处理</div><div class="status-value" id="pendingTasks">0</div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 历史记录模式内容（左侧筛选面板） -->
+                <div id="historyMode" style="display: none;">
+                    <div class="section-title"><i>⏺</i> 历史查询</div>
+
+                    <!-- 筛选条件 -->
+                    <div class="history-filters" style="flex-direction: column; padding: 12px;">
+                        <div class="filter-group" style="width: 100%;">
+                            <div class="filter-label">开始日期</div>
+                            <input type="date" id="startDate" class="filter-input" style="width: 100%;">
+                        </div>
+                        <div class="filter-group" style="width: 100%;">
+                            <div class="filter-label">结束日期</div>
+                            <input type="date" id="endDate" class="filter-input" style="width: 100%;">
+                        </div>
+                        <div class="filter-group" style="width: 100%;">
+                            <div class="filter-label">文件名</div>
+                            <input type="text" id="filenameFilter" class="filter-input" placeholder="输入文件名" style="width: 100%;">
+                        </div>
+                        <div class="filter-group" style="width: 100%;">
+                            <div class="filter-label">缺陷状态</div>
+                            <select id="defectFilter" class="filter-select" style="width: 100%;">
+                                <option value="">全部</option>
+                                <option value="1">有缺陷</option>
+                                <option value="0">无缺陷</option>
+                            </select>
+                        </div>
+                        <div class="filter-actions" style="display: flex; gap: 8px; margin-top: 8px;">
+                            <button class="filter-btn" style="flex: 1;" onclick="queryHistory()">查询</button>
+                            <button class="filter-btn reset" style="flex: 1;" onclick="resetFilters()">重置</button>
+                        </div>
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <div style="display: flex; gap: 8px; margin: 16px 0;">
+                        <button class="btn btn-success" style="flex: 1; margin-bottom: 0;" onclick="downloadHistory()">⬇ 下载查询结果</button>
+                        <button class="btn btn-danger" style="flex: 1; margin-bottom: 0;" onclick="refreshHistory()">↻ 刷新</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧内容区域 -->
+        <div class="content-area">
+            <!-- 检测结果标签页（仅在检测模式显示） -->
+            <div class="tab-container" id="resultTabs">
+                <div class="tab active" onclick="switchResultTab('normal')">合格PCB</div>
+                <div class="tab" onclick="switchResultTab('defect')">缺陷PCB</div>
+            </div>
+
+            <!-- 内容卡片容器 -->
+            <div class="content-cards">
+                <!-- 检测结果卡片 -->
+                <div class="card" id="resultsCard">
+                    <!-- 合格PCB卡片 -->
+                    <div class="card" id="normalCard" style="height: 100%;">
+                        <div class="card-header">
+                            <h3>✅ 合格PCB</h3>
+                            <span class="badge normal" id="normalCount">0</span>
+                        </div>
+                        <div class="card-body">
+                            <table class="result-table" id="normalTable">
+                                <thead>
+                                    <tr>
+                                        <th>缩略图</th>
+                                        <th>文件名</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="normalTableBody"></tbody>
+                            </table>
+                            <div id="normalEmpty" class="empty-message" style="display:none;">⛶ 无合格品记录</div>
+                        </div>
+                    </div>
+
+                    <!-- 缺陷PCB卡片 -->
+                    <div class="card" id="defectCard" style="height: 100%; display: none;">
+                        <div class="card-header">
+                            <h3>⚠️ 缺陷PCB</h3>
+                            <span class="badge" id="defectCount">0</span>
+                        </div>
+                        <div class="card-body">
+                            <table class="result-table" id="defectTable">
+                                <thead>
+                                    <tr>
+                                        <th>缩略图</th>
+                                        <th>文件名</th>
+                                        <th>缺陷信息</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="defectTableBody"></tbody>
+                            </table>
+                            <div id="defectEmpty" class="empty-message" style="display:none;">⛶ 无缺陷品记录</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 历史记录卡片 -->
+                <div class="history-card" id="historyCard" style="display: none;">
+                    <div class="history-header">
+                        <h3>📋 检测历史记录</h3>
+                        <span class="badge" id="historyCount">0</span>
+                    </div>
+                    <div class="history-body">
+                        <!-- 历史记录列表 -->
+                        <div class="history-table-container">
+                            <table class="history-table">
+                                <thead>
+                                    <tr>
+                                        <th>缩略图</th>
+                                        <th>文件名</th>
+                                        <th>检测时间</th>
+                                        <th>缺陷</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTableBody">
+                                    <tr><td colspan="5" class="empty-message">暂无历史记录</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态查看 -->
+    <div id="imageModal" class="modal">
+        <span class="modal-close">&times;</span>
+        <div class="modal-content">
+            <img class="modal-image" id="modalImage">
+            <div class="modal-controls">
+                <button class="modal-btn" id="zoomIn">+</button>
+                <button class="modal-btn" id="zoomOut">-</button>
+                <button class="modal-btn" id="resetView">⟲</button>
+            </div>
+        </div>
+    </div>
+    <div id="toast" class="toast"></div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
