@@ -633,3 +633,52 @@ modalImage.addEventListener('wheel',(e)=>{
     scale=Math.max(0.5,Math.min(3,scale+delta));
     updateImageTransform();
 });
+
+// ========== 导出统计功能 ==========
+
+/**
+ * 导出统计数据
+ */
+window.exportStats = async () => {
+    try {
+        showToast('正在导出统计数据...', 'info');
+
+        const response = await fetch('/api/stats/export');
+        if (!response.ok) throw new Error('导出失败');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `stats_${formatDate(new Date())}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        showToast('导出成功', 'success');
+    } catch (error) {
+        console.error('导出失败:', error);
+        showToast('导出失败: ' + error.message, 'error');
+    }
+};
+
+/**
+ * 刷新所有数据
+ */
+window.refreshAllData = async () => {
+    showToast('刷新数据中...', 'info');
+    // 这里可以根据需要实现刷新逻辑
+    // 例如重新加载当前页面的数据
+    location.reload();
+};
+
+// 确保 formatDate 函数存在（如果不存在则添加）
+if (typeof formatDate !== 'function') {
+    window.formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+}

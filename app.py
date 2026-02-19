@@ -305,15 +305,78 @@ class ModelManager:
         return device
 
     def load_model(self):
-        """加载模型"""
+        """加载模型（兼容PyTorch 2.6+）"""
         try:
             with self.lock:
                 if self.model is None:
                     logger.info(f"加载模型: {self.model_path}")
-                    self.model = YOLOv10(self.model_path)
+
+                    # 检查PyTorch版本
+                    torch_version = torch.__version__
+                    logger.info(f"PyTorch版本: {torch_version}")
+
+                    # 获取主版本号
+                    major_version = int(torch_version.split('.')[0])
+                    minor_version = int(torch_version.split('.')[1])
+
+                    # 对于PyTorch 2.6+，需要特殊处理
+                    if major_version >= 2 and minor_version >= 6:
+                        logger.info("检测到PyTorch 2.6+，使用兼容模式加载")
+
+                        # 方法1：使用环境变量（最简单）
+                        os.environ['TORCH_FORCE_WEIGHTS_ONLY_LOAD'] = '0'
+
+                        try:
+                            # 方法2：使用safe_globals上下文管理器
+                            import ultralytics.nn.tasks
+
+                            # 添加安全全局类
+                            torch.serialization.add_safe_globals([ultralytics.nn.tasks.YOLOv10DetectionModel])
+
+                            # 加载模型
+                            self.model = YOLOv10(self.model_path)
+
+                        except Exception as e:
+                            logger.warning(f"安全加载失败，尝试备用方法: {e}")
+
+                            # 方法3：猴子补丁torch.load
+                            import warnings
+                            warnings.filterwarnings("ignore", category=UserWarning)
+
+                            # 保存原始函数
+                            original_load = torch.load
+
+                            def patched_load(f, *args, **kwargs):
+                                # 强制设置weights_only=False
+                                kwargs['weights_only'] = False
+                                return original_load(f, *args, **kwargs)
+
+                            # 应用补丁
+                            torch.load = patched_load
+
+                            try:
+                                self.model = YOLOv10(self.model_path)
+                                logger.info("使用猴子补丁加载成功")
+                            except Exception as e2:
+                                logger.error(f"猴子补丁加载失败: {e2}")
+                                # 恢复原始函数
+                                torch.load = original_load
+                                raise
+                            finally:
+                                # 恢复原始函数
+                                torch.load = original_load
+                    else:
+                        # 旧版本PyTorch直接加载
+                        self.model = YOLOv10(self.model_path)
+
                     logger.info("✅ 模型加载成功")
+
         except Exception as e:
             logger.error(f"模型加载失败: {e}")
+            logger.error("请尝试以下解决方案：")
+            logger.error("1. 升级ultralytics包: pip install -U ultralytics")
+            logger.error("2. 或者降级PyTorch: pip install torch==2.5.1")
+            logger.error("3. 或者手动设置环境变量后运行: export TORCH_FORCE_WEIGHTS_ONLY_LOAD=0 && python app.py")
             raise
 
     def predict(self, image, conf_threshold=0.25, iou_threshold=0.45):
@@ -934,6 +997,234 @@ def system_status():
 
     except Exception as e:
         logger.error(f"获取系统状态失败: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# ========== 统计页面相关路由 ==========
+
+@app.route('/stats')
+def stats():
+    """统计页面"""
+    return render_template('stats.html')
+
+
+@app.route('/api/stats/overview')
+def get_stats_overview():
+    """获取统计概览数据"""
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+
+        # 查询记录（带日期筛选）
+        records = db_manager.query_records(
+            start_date=start_date,
+            end_date=end_date
+        )
+
+        total_count = len(records)
+        defect_count = sum(1 for r in records if r['has_defect'])
+        normal_count = total_count - defect_count
+
+        # 缺陷比例
+        defect_ratio = (defect_count / total_count * 100) if total_count > 0 else 0
+
+        return jsonify({
+            'total_count': total_count,
+            'defect_count': defect_count,
+            'normal_count': normal_count,
+            'defect_ratio': round(defect_ratio, 2)
+        })
+    except Exception as e:
+        logger.error(f"获取统计概览失败: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/stats/defect_types')
+def get_defect_types_stats():
+    """获取各类缺陷数量统计"""
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+
+        records = db_manager.query_records(
+            start_date=start_date,
+            end_date=end_date,
+            has_defect=True  # 只查询有缺陷的记录
+        )
+
+        # 统计各类缺陷
+        defect_counts = {
+            'missing_hole': 0,
+            'mouse_bite': 0,
+            'short_circuit': 0
+        }
+
+        defect_names = {
+            'missing_hole': '缺失孔',
+            'mouse_bite': '鼠咬缺陷',
+            'short_circuit': '短路'
+        }
+
+        for record in records:
+            if record.get('defects'):
+                for defect in record['defects']:
+                    defect_type_en = defect.get('defect_type_en', '')
+                    if defect_type_en in defect_counts:
+                        defect_counts[defect_type_en] += 1
+
+        # 格式化返回数据
+        result = []
+        colors = {
+            'missing_hole': '#f05454',
+            'mouse_bite': '#8ecf8e',
+            'short_circuit': '#5f9df3'
+        }
+
+        for defect_type_en, count in defect_counts.items():
+            result.append({
+                'name': defect_names.get(defect_type_en, defect_type_en),
+                'name_en': defect_type_en,
+                'count': count,
+                'color': colors.get(defect_type_en, '#999999')
+            })
+
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"获取缺陷类型统计失败: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/stats/daily')
+def get_daily_stats_api():
+    """获取每日检测数量统计"""
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+
+        if not start_date or not end_date:
+            # 默认最近30天
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=30)
+            start_date = start_date.strftime('%Y-%m-%d')
+            end_date = end_date.strftime('%Y-%m-%d')
+
+        daily_stats = get_daily_stats(start_date, end_date)
+
+        return jsonify(daily_stats)
+    except Exception as e:
+        logger.error(f"获取每日统计失败: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+def get_daily_stats(start_date, end_date):
+    """获取每日统计数据的辅助函数"""
+    try:
+        with sqlite3.connect(db_manager.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            # 查询每日总数和有缺陷的数量
+            cursor.execute('''
+                SELECT 
+                    DATE(detection_time) as date,
+                    COUNT(*) as total,
+                    SUM(CASE WHEN has_defect = 1 THEN 1 ELSE 0 END) as defect_count
+                FROM detection_records
+                WHERE DATE(detection_time) BETWEEN ? AND ?
+                GROUP BY DATE(detection_time)
+                ORDER BY date
+            ''', (start_date, end_date))
+
+            rows = cursor.fetchall()
+
+            result = []
+            for row in rows:
+                result.append({
+                    'date': row['date'],
+                    'total': row['total'],
+                    'defect': row['defect_count'] or 0,
+                    'normal': row['total'] - (row['defect_count'] or 0)
+                })
+
+            return result
+    except Exception as e:
+        logger.error(f"获取每日统计失败: {e}")
+        return []
+
+
+@app.route('/api/stats/confidence_distribution')
+def get_confidence_distribution():
+    """获取缺陷置信度分布"""
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+
+        records = db_manager.query_records(
+            start_date=start_date,
+            end_date=end_date,
+            has_defect=True
+        )
+
+        confidence_ranges = [
+            {'range': '0-0.5', 'min': 0, 'max': 0.5, 'count': 0},
+            {'range': '0.5-0.7', 'min': 0.5, 'max': 0.7, 'count': 0},
+            {'range': '0.7-0.8', 'min': 0.7, 'max': 0.8, 'count': 0},
+            {'range': '0.8-0.9', 'min': 0.8, 'max': 0.9, 'count': 0},
+            {'range': '0.9-1.0', 'min': 0.9, 'max': 1.0, 'count': 0}
+        ]
+
+        for record in records:
+            if record.get('defects'):
+                for defect in record['defects']:
+                    conf = defect.get('confidence', 0)
+                    for range_item in confidence_ranges:
+                        if range_item['min'] <= conf < range_item['max']:
+                            range_item['count'] += 1
+                            break
+
+        return jsonify(confidence_ranges)
+    except Exception as e:
+        logger.error(f"获取置信度分布失败: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/stats/export')
+def export_stats():
+    """导出统计数据为CSV"""
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+
+        # 获取数据
+        defect_types = get_defect_types_stats().json
+        daily_stats = get_daily_stats(start_date, end_date) if start_date and end_date else []
+
+        # 创建CSV
+        output = StringIO()
+
+        # 写入缺陷类型统计
+        output.write("=== 缺陷类型统计 ===\n")
+        writer = csv.writer(output)
+        writer.writerow(['缺陷类型', '数量'])
+        for item in defect_types:
+            writer.writerow([item['name'], item['count']])
+
+        output.write("\n\n=== 每日检测统计 ===\n")
+        writer = csv.writer(output)
+        writer.writerow(['日期', '总数', '缺陷数', '正常数'])
+        for item in daily_stats:
+            writer.writerow([item['date'], item['total'], item['defect'], item['normal']])
+
+        # 返回CSV文件
+        output.seek(0)
+        return send_file(
+            BytesIO(output.getvalue().encode('utf-8-sig')),
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=f'stats_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        )
+    except Exception as e:
+        logger.error(f"导出统计失败: {e}")
         return jsonify({'error': str(e)}), 500
 
 

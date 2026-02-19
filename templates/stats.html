@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCB检测数据统计</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/stats.css') }}">
+    <!-- 引入Chart.js用于图表展示 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="stats-container">
+        <!-- 导航栏 -->
+        <div class="stats-nav">
+            <div class="nav-left">
+                <h1>PCB缺陷检测数据统计</h1>
+            </div>
+            <div class="nav-right">
+                <a href="/" class="nav-btn">← 返回检测</a>
+                <button class="nav-btn" onclick="exportStats()">⬇ 导出统计</button>
+                <button class="nav-btn" onclick="refreshAllData()">↻ 刷新</button>
+            </div>
+        </div>
+
+        <!-- 日期筛选 -->
+        <div class="date-filter">
+            <div class="filter-group">
+                <label>开始日期</label>
+                <input type="date" id="startDate" class="filter-input">
+            </div>
+            <div class="filter-group">
+                <label>结束日期</label>
+                <input type="date" id="endDate" class="filter-input">
+            </div>
+            <div class="filter-actions">
+                <button class="filter-btn" onclick="applyDateFilter()">应用筛选</button>
+                <button class="filter-btn reset" onclick="resetDateFilter()">重置筛选</button>
+            </div>
+        </div>
+
+        <!-- 概览卡片 -->
+        <div class="stats-overview">
+            <div class="overview-card total">
+                <div class="card-icon">📋</div>
+                <div class="card-content">
+                    <div class="card-label">总检测数</div>
+                    <div class="card-value" id="totalCount">0</div>
+                </div>
+            </div>
+            <div class="overview-card defect">
+                <div class="card-icon">⚠️</div>
+                <div class="card-content">
+                    <div class="card-label">缺陷数</div>
+                    <div class="card-value" id="defectCount">0</div>
+                </div>
+            </div>
+            <div class="overview-card normal">
+                <div class="card-icon">✅</div>
+                <div class="card-content">
+                    <div class="card-label">正常数</div>
+                    <div class="card-value" id="normalCount">0</div>
+                </div>
+            </div>
+            <div class="overview-card ratio">
+                <div class="card-icon">📊</div>
+                <div class="card-content">
+                    <div class="card-label">缺陷率</div>
+                    <div class="card-value" id="defectRatio">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图表区域 -->
+        <div class="charts-grid">
+            <!-- 缺陷类型分布 -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3>缺陷类型分布</h3>
+                    <span class="chart-subtitle">各类缺陷数量统计</span>
+                </div>
+                <div class="chart-body">
+                    <canvas id="defectTypeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 缺陷比例饼图 -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3>合格/缺陷比例</h3>
+                    <span class="chart-subtitle">总体检测结果分布</span>
+                </div>
+                <div class="chart-body">
+                    <canvas id="ratioChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 每日趋势 -->
+            <div class="chart-card full-width">
+                <div class="chart-header">
+                    <h3>每日检测趋势</h3>
+                    <span class="chart-subtitle">按日期统计的检测数量</span>
+                </div>
+                <div class="chart-body">
+                    <canvas id="dailyTrendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 置信度分布 -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3>缺陷置信度分布</h3>
+                    <span class="chart-subtitle">缺陷检测的置信度区间</span>
+                </div>
+                <div class="chart-body">
+                    <canvas id="confidenceChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 缺陷详情表格 -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3>缺陷详情</h3>
+                    <span class="chart-subtitle">各类型缺陷详细信息</span>
+                </div>
+                <div class="chart-body" style="overflow-x: auto;">
+                    <table class="stats-table" id="defectDetailTable">
+                        <thead>
+                            <tr>
+                                <th>缺陷类型</th>
+                                <th>数量</th>
+                                <th>占比</th>
+                                <th>颜色标识</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="4" class="empty-message">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 最新缺陷记录 - 带分页功能 -->
+        <div class="recent-defects">
+            <div class="section-header">
+                <h3>🔍 缺陷记录列表</h3>
+                <div class="page-size-selector">
+                    <label for="pageSizeSelect">每页显示：</label>
+                    <select id="pageSizeSelect" onchange="changePageSize()">
+                        <option value="10" selected>10条</option>
+                        <option value="20">20条</option>
+                        <option value="50">50条</option>
+                        <option value="100">100条</option>
+                    </select>
+                </div>
+            </div>
+            <div class="defects-table-container">
+                <table class="defects-table">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>文件名</th>
+                            <th>缺陷类型</th>
+                            <th>置信度</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentDefectsBody">
+                        <tr><td colspan="5" class="empty-message">暂无数据</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 分页控件区域 -->
+            <div class="pagination-container">
+                <div class="pagination-info" id="paginationInfo">显示 0-0 条，共 0 条记录</div>
+                <div class="pagination" id="pagination"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载动画 -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/stats.js') }}"></script>
+</body>
+</html>
