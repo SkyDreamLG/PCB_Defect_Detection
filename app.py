@@ -785,6 +785,16 @@ app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 限制上传文件大小
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['DETECTED_FOLDER'] = 'detected'
 
+from werkzeug.middleware.proxy_fix import ProxyFix
+
+app.wsgi_app = ProxyFix(
+    app.wsgi_app,
+    x_for=1,     # 信任 X-Forwarded-For 的第一个IP
+    x_proto=1,   # 信任 X-Forwarded-Proto
+    x_host=1,    # 信任 X-Forwarded-Host
+    x_port=1     # 信任 X-Forwarded-Port
+)
+
 # 创建上传目录
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['DETECTED_FOLDER'], exist_ok=True)

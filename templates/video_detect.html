@@ -292,6 +292,165 @@
             color: white;
         }
     </style>
+    <!-- 摄像头选择模态框样式 - 贴左边悬浮 -->
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: transparent;  /* 移除遮罩 */
+            pointer-events: none;  /* 让点击穿透，除了模态框本身 */
+        }
+
+        .modal-content {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 360px;
+            background: #2a2c3b;
+            border: 2px solid #3a6ea5;
+            border-radius: 8px;
+            padding: 0;
+            box-shadow: 8px 8px 20px rgba(0, 0, 0, 0.5);
+            animation: slideInLeft 0.3s ease;
+            pointer-events: auto;  /* 模态框本身可以点击 */
+        }
+
+        @keyframes slideInLeft {
+            from {
+                left: -400px;
+                opacity: 0;
+            }
+            to {
+                left: 20px;
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            padding: 15px 20px;
+            background: #1b1e2a;
+            border-bottom: 2px solid #3a6ea5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #fff;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-header h3::before {
+            content: "📷";
+            font-size: 1.2rem;
+        }
+
+        .modal-close {
+            color: #99a6c2;
+            font-size: 24px;
+            cursor: pointer;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #fff;
+        }
+
+        .modal-body {
+            padding: 20px;
+            background: #212332;
+            border-radius: 0 0 8px 8px;
+        }
+
+        /* 摄像头选择选项样式 */
+        .camera-option {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            background: #1f2130;
+            border: 1px solid #3e4055;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 4px solid transparent;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+
+        .camera-option:hover {
+            background: #2f354a;
+            border-color: #5f7aa6;
+            transform: translateX(2px);
+        }
+
+        .camera-option.selected {
+            border-left-color: #3a6ea5;
+            background: #262c3d;
+            border-color: #3a6ea5;
+            box-shadow: 0 2px 8px rgba(58, 110, 165, 0.3);
+        }
+
+        .camera-option input[type="radio"] {
+            margin-right: 12px;
+            accent-color: #3a6ea5;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .camera-option label {
+            flex: 1;
+            color: #e0e2e8;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .camera-badge {
+            font-size: 0.7rem;
+            background: #2a4b78;
+            color: #ecf3ff;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            border-top: 1px solid #3e4055;
+            padding-top: 20px;
+        }
+
+        .modal-footer .video-btn {
+            flex: 1;
+            margin: 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .modal-footer .video-btn.primary {
+            background: #2a4b78;
+        }
+
+        .modal-footer .video-btn.primary:hover {
+            background: #31639c;
+        }
+    </style>
 </head>
 <body>
     <div class="video-container">
@@ -396,6 +555,29 @@
         </div>
     </div>
 
+    <!-- 摄像头选择模态框 - 贴左边悬浮 -->
+    <div id="cameraModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>选择摄像头</h3>
+                <span class="modal-close" onclick="cancelCameraSelection()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p style="color: #b0c4de; margin-bottom: 15px;">检测到多个摄像头：</p>
+                <div id="cameraOptions" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- 选项会动态添加到这里 -->
+                </div>
+                <div class="modal-footer">
+                    <button class="video-btn" onclick="cancelCameraSelection()" style="background: #4a4f62; border-color: #6a7085;">取消</button>
+                    <button class="video-btn primary" onclick="confirmCameraSelection()">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示消息容器 -->
+    <div id="toast" class="toast"></div>
+
     <script>
         // 视频检测JavaScript
         const video = document.createElement('video');
@@ -406,6 +588,10 @@
         let saveCount = 0;
         let hasYoloResult = false;  // 标记是否有YOLO检测结果
         let lastSavedDetection = null;  // 记录上次保存的检测结果，防止重复保存
+
+        // 摄像头选择相关变量
+        let pendingResolve = null;  // 用于保存 Promise 的 resolve 函数
+        let selectedDeviceId = null;
 
         // DOM元素
         const cameraFeed = document.getElementById('cameraFeed');
@@ -436,19 +622,228 @@
             }
         }
 
+        // 显示摄像头选择模态框
+        function showCameraModal(devices) {
+            return new Promise((resolve) => {
+                pendingResolve = resolve;
+                selectedDeviceId = null;
+
+                const modal = document.getElementById('cameraModal');
+                const optionsDiv = document.getElementById('cameraOptions');
+
+                // 清空并添加选项
+                optionsDiv.innerHTML = '';
+
+                devices.forEach((device, index) => {
+                    const deviceName = device.label || `摄像头 ${index + 1}`;
+                    const isDefault = index === 0;
+
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'camera-option' + (isDefault ? ' selected' : '');
+
+                    // 如果是默认选项，设置selectedDeviceId
+                    if (isDefault) {
+                        selectedDeviceId = device.deviceId;
+                    }
+
+                    const radio = document.createElement('input');
+                    radio.type = 'radio';
+                    radio.name = 'camera';
+                    radio.value = device.deviceId;
+                    radio.checked = isDefault;
+                    radio.onchange = () => selectCameraOption(device.deviceId);
+
+                    const label = document.createElement('label');
+                    label.innerHTML = `
+                        <span>${deviceName}</span>
+                        <span class="camera-badge">${index === 0 ? '推荐' : ''}</span>
+                    `;
+
+                    optionDiv.appendChild(radio);
+                    optionDiv.appendChild(label);
+
+                    optionDiv.onclick = (e) => {
+                        if (e.target !== radio) {
+                            radio.checked = true;
+                            selectCameraOption(device.deviceId);
+                        }
+                    };
+
+                    optionsDiv.appendChild(optionDiv);
+                });
+
+                modal.style.display = 'flex';
+            });
+        }
+
+        // 选择摄像头选项
+        function selectCameraOption(deviceId) {
+            selectedDeviceId = deviceId;
+
+            // 更新选中样式
+            document.querySelectorAll('.camera-option').forEach(opt => {
+                opt.classList.remove('selected');
+                const radio = opt.querySelector('input[type="radio"]');
+                if (radio && radio.value === deviceId) {
+                    opt.classList.add('selected');
+                }
+            });
+        }
+
+        // 确认选择摄像头
+        function confirmCameraSelection() {
+            if (selectedDeviceId) {
+                const modal = document.getElementById('cameraModal');
+                modal.style.display = 'none';
+
+                if (pendingResolve) {
+                    pendingResolve(selectedDeviceId);
+                    pendingResolve = null;
+                }
+                selectedDeviceId = null;
+            } else {
+                showToast('请选择一个摄像头', 'error');
+            }
+        }
+
+        // 取消选择摄像头
+        function cancelCameraSelection() {
+            const modal = document.getElementById('cameraModal');
+            modal.style.display = 'none';
+
+            if (pendingResolve) {
+                pendingResolve(null);
+                pendingResolve = null;
+            }
+            selectedDeviceId = null;
+        }
+
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const modal = document.getElementById('cameraModal');
+            if (event.target === modal) {
+                cancelCameraSelection();
+            }
+        };
+
         // 启动摄像头
         startCameraBtn.addEventListener('click', async () => {
             try {
-                mediaStream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        width: 1280,
-                        height: 720,
-                        facingMode: 'environment'  // 优先使用后置摄像头
-                    }
-                });
+                // 先强制停止任何可能存在的流
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(track => track.stop());
+                    mediaStream = null;
+                }
+                if (video.srcObject) {
+                    video.srcObject.getTracks().forEach(track => track.stop());
+                    video.srcObject = null;
+                }
 
-                video.srcObject = mediaStream;
-                video.play();
+                // 获取所有摄像头设备
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(d => d.kind === 'videoinput');
+
+                if (videoDevices.length === 0) {
+                    throw new Error('未检测到摄像头设备');
+                }
+
+                console.log('找到摄像头:', videoDevices.map(d => d.label || '未知'));
+
+                // 如果有多个摄像头，显示选择弹窗
+                let selectedDeviceId = null;
+                if (videoDevices.length > 1) {
+                    showToast('检测到多个摄像头，请选择要使用的设备', 'info');
+                    selectedDeviceId = await showCameraModal(videoDevices);
+
+                    // 如果用户取消选择，直接返回
+                    if (!selectedDeviceId) {
+                        showToast('已取消摄像头选择', 'info');
+                        return;
+                    }
+                } else {
+                    selectedDeviceId = videoDevices[0].deviceId;
+                }
+
+                // 尝试摄像头配置
+                let stream = null;
+                let lastError = null;
+
+                // 先尝试用户选择的设备
+                try {
+                    console.log('尝试选择的设备');
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            deviceId: { exact: selectedDeviceId },
+                            width: { ideal: 640 },
+                            height: { ideal: 480 }
+                        }
+                    });
+                    console.log('选择的设备成功');
+                } catch (e) {
+                    console.warn('选择的设备失败:', e.message);
+                    lastError = e;
+                }
+
+                // 如果选择的设备失败，逐个尝试其他设备
+                if (!stream) {
+                    for (const device of videoDevices) {
+                        if (device.deviceId === selectedDeviceId) continue; // 已经试过了
+
+                        try {
+                            console.log('尝试备用设备:', device.label || '未知');
+                            stream = await navigator.mediaDevices.getUserMedia({
+                                video: {
+                                    deviceId: { exact: device.deviceId },
+                                    width: { ideal: 640 },
+                                    height: { ideal: 480 }
+                                }
+                            });
+                            console.log('备用设备成功:', device.label || '未知');
+                            break;
+                        } catch (e) {
+                            console.warn('备用设备失败:', device.label || '未知', e.message);
+                            lastError = e;
+                        }
+                    }
+                }
+
+                // 最后尝试不带 deviceId 的配置
+                if (!stream) {
+                    const constraintsList = [
+                        { video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'environment' } },
+                        { video: { width: { ideal: 640 }, height: { ideal: 480 } } },
+                        { video: true }
+                    ];
+
+                    for (const constraints of constraintsList) {
+                        try {
+                            console.log('尝试通用配置:', constraints);
+                            stream = await navigator.mediaDevices.getUserMedia(constraints);
+                            console.log('通用配置成功');
+                            break;
+                        } catch (e) {
+                            console.warn('通用配置失败:', e.message);
+                            lastError = e;
+                        }
+                    }
+                }
+
+                if (!stream) {
+                    throw lastError || new Error('所有摄像头配置都失败');
+                }
+
+                // 成功获取流
+                video.srcObject = stream;
+                await video.play();
+
+                mediaStream = stream;
+
+                // 显示当前使用的摄像头信息
+                const track = stream.getVideoTracks()[0];
+                const settings = track.getSettings();
+                const deviceLabel = track.label;
+                console.log('当前使用摄像头:', deviceLabel);
+                console.log('摄像头设置:', settings);
 
                 // 创建会话
                 sessionId = generateSessionId();
@@ -461,20 +856,27 @@
                 startCameraBtn.disabled = true;
                 stopCameraBtn.disabled = false;
                 detectBtn.disabled = false;
-                cameraStatus.textContent = '已连接';
+                cameraStatus.textContent = `已连接 (${deviceLabel.split(' ')[0] || '摄像头'})`;
                 cameraStatus.style.color = '#4f9e7a';
 
-                // 重置状态
-                hasYoloResult = false;
-                lastSavedDetection = null;
-                yoloStatus.textContent = '未检测';
-                yoloStatus.className = 'status-value';
-                updateSaveButton();
+                showToast(`摄像头启动成功: ${deviceLabel}`, 'success');
 
-                showToast('摄像头启动成功', 'success');
             } catch (error) {
                 console.error('摄像头启动失败:', error);
-                showToast('摄像头启动失败: ' + error.message, 'error');
+
+                let errorMessage = '摄像头启动失败: ';
+                if (error.name === 'NotReadableError') {
+                    errorMessage += '摄像头被其他应用占用，请关闭其他使用摄像头的程序';
+                } else {
+                    errorMessage += error.message;
+                }
+
+                showToast(errorMessage, 'error');
+
+                cameraStatus.textContent = '连接失败';
+                cameraStatus.style.color = '#f05454';
+                startCameraBtn.disabled = false;
+                stopCameraBtn.disabled = true;
             }
         });
 
@@ -522,7 +924,7 @@
 
         // 处理视频帧
         async function processVideoFrame() {
-            if (!isCameraActive || !video.videoWidth) {
+            if (!isCameraActive || !video.videoWidth || !sessionId) {
                 animationFrame = requestAnimationFrame(processVideoFrame);
                 return;
             }
