@@ -2135,6 +2135,124 @@ def clear_video_session():
         logger.error(f"清除会话失败: {e}")
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/api/clear_history', methods=['POST'])
+def clear_history():
+    """清除历史记录"""
+    try:
+        data = request.get_json()
+        mode = data.get('mode', 'filtered')
+
+        conn = None
+        cursor = None
+        deleted_count = 0
+        file_paths_to_delete = []
+
+        try:
+            with sqlite3.connect(db_manager.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+
+                if mode == 'all':
+                    # 先获取所有文件路径，用于后续删除文件
+                    cursor.execute("SELECT file_path, detected_file_path FROM detection_records")
+                    rows = cursor.fetchall()
+                    for row in rows:
+                        if row['file_path'] and os.path.exists(row['file_path']):
+                            file_paths_to_delete.append(row['file_path'])
+                        if row['detected_file_path'] and os.path.exists(row['detected_file_path']):
+                            file_paths_to_delete.append(row['detected_file_path'])
+
+                    # 删除所有记录
+                    cursor.execute("DELETE FROM detection_records")
+                    deleted_count = cursor.rowcount
+
+                elif mode == 'single' or mode == 'filtered':
+                    record_ids = data.get('record_ids', [])
+
+                    if not record_ids:
+                        # 如果没有提供ID，根据筛选条件查询
+                        filters = data.get('filters', {})
+
+                        query = "SELECT id, file_path, detected_file_path FROM detection_records WHERE 1=1"
+                        params = []
+
+                        if filters.get('start_date'):
+                            query += " AND detection_time >= ?"
+                            params.append(filters['start_date'])
+
+                        if filters.get('end_date'):
+                            query += " AND detection_time <= ?"
+                            params.append(filters['end_date'] + " 23:59:59")
+
+                        if filters.get('filename'):
+                            query += " AND filename LIKE ?"
+                            params.append(f"%{filters['filename']}%")
+
+                        has_defect = filters.get('has_defect')
+                        if has_defect is not None and has_defect != '':
+                            query += " AND has_defect = ?"
+                            params.append(1 if has_defect == '1' else 0)
+
+                        cursor.execute(query, params)
+                        rows = cursor.fetchall()
+                        record_ids = [row['id'] for row in rows]
+
+                        # 收集文件路径
+                        for row in rows:
+                            if row['file_path'] and os.path.exists(row['file_path']):
+                                file_paths_to_delete.append(row['file_path'])
+                            if row['detected_file_path'] and os.path.exists(row['detected_file_path']):
+                                file_paths_to_delete.append(row['detected_file_path'])
+
+                    if record_ids:
+                        # 如果还没收集文件路径（直接传入了ID的情况）
+                        if not file_paths_to_delete:
+                            placeholders = ','.join(['?'] * len(record_ids))
+                            cursor.execute(
+                                f"SELECT file_path, detected_file_path FROM detection_records WHERE id IN ({placeholders})",
+                                record_ids)
+                            rows = cursor.fetchall()
+                            for row in rows:
+                                if row['file_path'] and os.path.exists(row['file_path']):
+                                    file_paths_to_delete.append(row['file_path'])
+                                if row['detected_file_path'] and os.path.exists(row['detected_file_path']):
+                                    file_paths_to_delete.append(row['detected_file_path'])
+
+                        # 删除指定ID的记录
+                        placeholders = ','.join(['?'] * len(record_ids))
+                        cursor.execute(f"DELETE FROM detection_records WHERE id IN ({placeholders})", record_ids)
+                        deleted_count = cursor.rowcount
+
+                conn.commit()
+
+                # 删除物理文件
+                deleted_files = 0
+                for file_path in file_paths_to_delete:
+                    try:
+                        if os.path.exists(file_path):
+                            os.remove(file_path)
+                            deleted_files += 1
+                    except Exception as e:
+                        logger.error(f"删除文件失败 {file_path}: {e}")
+
+                logger.info(f"清除历史记录: 删除了 {deleted_count} 条记录, {deleted_files} 个文件")
+
+                return jsonify({
+                    'success': True,
+                    'deleted_count': deleted_count,
+                    'deleted_files': deleted_files,
+                    'message': f'成功删除 {deleted_count} 条记录'
+                })
+
+        except sqlite3.Error as e:
+            logger.error(f"数据库操作失败: {e}")
+            return jsonify({'success': False, 'error': f'数据库操作失败: {str(e)}'}), 500
+
+    except Exception as e:
+        logger.error(f"清除历史记录失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 def main():
     """主函数"""
     print("=" * 60)

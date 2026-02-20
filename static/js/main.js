@@ -682,3 +682,243 @@ if (typeof formatDate !== 'function') {
         return `${year}-${month}-${day}`;
     };
 }
+
+// 清除历史记录相关变量
+let clearMode = 'filtered'; // 'filtered' 或 'all'
+let recordsToDelete = [];
+
+// 显示清除历史记录确认模态框
+function showClearHistoryModal(mode) {
+    clearMode = mode;
+
+    const modal = document.getElementById('clearHistoryModal');
+    const title = document.getElementById('clearModalTitle');
+    const message = document.getElementById('clearModalMessage');
+    const countInfo = document.getElementById('clearCountInfo');
+
+    if (mode === 'all') {
+        title.textContent = '清除全部历史记录';
+        message.textContent = '确定要清除所有历史记录吗？此操作不可恢复，所有图片文件也将被删除。';
+
+        // 获取总记录数
+        const totalRecords = document.getElementById('historyCount').textContent;
+        countInfo.textContent = `将删除全部 ${totalRecords} 条历史记录`;
+    } else {
+        title.textContent = '清除筛选结果';
+
+        // 获取当前显示的记录数
+        const tableBody = document.getElementById('historyTableBody');
+        const rows = tableBody.querySelectorAll('tr:not(.empty-message)');
+        const recordCount = rows.length;
+
+        // 收集要删除的记录ID
+        recordsToDelete = [];
+        rows.forEach(row => {
+            const deleteBtn = row.querySelector('button[onclick^="deleteHistoryRecord"]');
+            if (deleteBtn) {
+                const onclickAttr = deleteBtn.getAttribute('onclick');
+                const match = onclickAttr.match(/deleteHistoryRecord\((\d+)\)/);
+                if (match) {
+                    recordsToDelete.push(parseInt(match[1]));
+                }
+            }
+        });
+
+        message.textContent = '确定要清除当前筛选出的历史记录吗？此操作不可恢复，对应的图片文件也将被删除。';
+        countInfo.textContent = `将删除 ${recordCount} 条筛选出的记录`;
+
+        if (recordCount === 0) {
+            alert('当前没有符合条件的记录可清除');
+            return;
+        }
+    }
+
+    modal.style.display = 'flex';
+}
+
+// 关闭清除模态框
+function closeClearModal() {
+    document.getElementById('clearHistoryModal').style.display = 'none';
+    recordsToDelete = [];
+}
+
+// 确认清除历史记录
+function confirmClearHistory() {
+    const confirmBtn = document.getElementById('confirmClearBtn');
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '清除中...';
+
+    let url = '/api/clear_history';
+    let body = {};
+
+    if (clearMode === 'all') {
+        body = { mode: 'all' };
+    } else {
+        body = {
+            mode: 'filtered',
+            record_ids: recordsToDelete,
+            filters: {
+                start_date: document.getElementById('startDate').value,
+                end_date: document.getElementById('endDate').value,
+                filename: document.getElementById('filenameFilter').value,
+                has_defect: document.getElementById('defectFilter').value
+            }
+        };
+    }
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`成功清除 ${data.deleted_count} 条记录`, 'success');
+
+            // 刷新历史记录列表
+            refreshHistory();
+
+            // 更新统计信息（如果有统计页面）
+            if (typeof updateStats === 'function') {
+                updateStats();
+            }
+        } else {
+            showToast('清除失败: ' + (data.error || '未知错误'), 'error');
+        }
+
+        closeClearModal();
+    })
+    .catch(error => {
+        console.error('清除失败:', error);
+        showToast('清除失败: ' + error.message, 'error');
+        closeClearModal();
+    })
+    .finally(() => {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '确认清除';
+    });
+}
+
+// 删除单条历史记录（可选功能）
+function deleteHistoryRecord(recordId) {
+    if (!confirm('确定要删除这条历史记录吗？此操作不可恢复，对应的图片文件也将被删除。')) {
+        return;
+    }
+
+    fetch('/api/clear_history', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            mode: 'single',
+            record_ids: [recordId]
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('删除成功', 'success');
+            refreshHistory();
+        } else {
+            showToast('删除失败: ' + (data.error || '未知错误'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('删除失败:', error);
+        showToast('删除失败: ' + error.message, 'error');
+    });
+}
+
+// 在历史记录表格的操作列添加删除按钮（需要在渲染历史记录时添加）
+// 修改 queryHistory 函数中的渲染部分
+function renderHistoryTable(records) {
+    const tbody = document.getElementById('historyTableBody');
+    const historyCount = document.getElementById('historyCount');
+
+    if (!records || records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-message">暂无历史记录</td></tr>';
+        historyCount.textContent = '0';
+        return;
+    }
+
+    let html = '';
+    records.forEach(record => {
+        const hasDefect = record.has_defect ? '是' : '否';
+        const defectClass = record.has_defect ? 'defect-badge' : 'normal-badge';
+
+        // 缺陷信息摘要
+        let defectSummary = '';
+        if (record.defects && record.defects.length > 0) {
+            const defectTypes = record.defects.map(d => d.defect_type).join(', ');
+            defectSummary = `${record.defect_count}个缺陷 (${defectTypes})`;
+        } else {
+            defectSummary = '无';
+        }
+
+        html += `
+            <tr>
+                <td>
+                    <img src="/get_history_image/${record.id}?type=detected" 
+                         class="thumbnail" 
+                         onclick="showImageModal('${record.id}', 'detected')"
+                         style="cursor: pointer; width: 60px; height: 60px; object-fit: cover;">
+                </td>
+                <td>${record.filename}</td>
+                <td>${record.detection_time}</td>
+                <td><span class="${defectClass}">${hasDefect}</span><br><small>${defectSummary}</small></td>
+                <td>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="table-btn" onclick="downloadHistoryItem(${record.id})" title="下载">⬇</button>
+                        <button class="table-btn" onclick="viewHistoryDetail(${record.id})" title="查看详情">👁️</button>
+                        <button class="table-btn delete-btn" onclick="deleteHistoryRecord(${record.id})" title="删除" style="color: #e74c3c;">✕</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+    historyCount.textContent = records.length;
+}
+
+// 修改原有的 queryHistory 函数，调用新的渲染函数
+function queryHistory() {
+    // 获取筛选条件
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    const filename = document.getElementById('filenameFilter').value;
+    const hasDefect = document.getElementById('defectFilter').value;
+
+    // 构建查询参数
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    if (filename) params.append('filename', filename);
+    if (hasDefect !== '') params.append('has_defect', hasDefect);
+
+    // 显示加载状态
+    const tbody = document.getElementById('historyTableBody');
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-message">加载中...</td></tr>';
+
+    fetch(`/query_history?${params.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.records) {
+                renderHistoryTable(data.records);
+            } else {
+                renderHistoryTable([]);
+                if (data.error) {
+                    showToast('查询失败: ' + data.error, 'error');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('查询失败:', error);
+            showToast('查询失败: ' + error.message, 'error');
+            renderHistoryTable([]);
+        });
+}

@@ -129,10 +129,21 @@
                         </div>
                     </div>
 
-                    <!-- 操作按钮 -->
-                    <div style="display: flex; gap: 8px; margin: 16px 0;">
+                    <!-- 操作按钮 - 第一行：下载和刷新 -->
+                    <div style="display: flex; gap: 8px; margin: 16px 0 8px 0;">
                         <button class="btn btn-success" style="flex: 1; margin-bottom: 0;" onclick="downloadHistory()">⬇ 下载查询结果</button>
-                        <button class="btn btn-danger" style="flex: 1; margin-bottom: 0;" onclick="refreshHistory()">↻ 刷新</button>
+                        <button class="btn btn-info" style="flex: 1; margin-bottom: 0; background-color: #3498db;" onclick="refreshHistory()">↻ 刷新</button>
+                    </div>
+
+                    <!-- 清除历史记录按钮区域 -->
+                    <div style="border-top: 1px solid #3a4a5e; margin: 10px 0; padding-top: 15px;">
+                        <div style="display: flex; gap: 8px; margin-bottom: 5px;">
+                            <button class="btn btn-warning" style="flex: 1; background-color: #f39c12;" onclick="showClearHistoryModal('filtered')">🗑 清除筛选结果</button>
+                            <button class="btn btn-danger" style="flex: 1;" onclick="showClearHistoryModal('all')">⚠️ 清除全部</button>
+                        </div>
+                        <div style="font-size: 0.75rem; color: #a0aec0; text-align: center; margin-top: 5px;">
+                            清除操作不可恢复，请谨慎使用
+                        </div>
                     </div>
                 </div>
             </div>
@@ -237,5 +248,25 @@
     <div id="toast" class="toast"></div>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <!-- 清除历史记录确认模态框 -->
+    <div id="clearHistoryModal" class="modal" style="display: none;">
+        <div class="modal-content" style="width: 400px; max-width: 90%; background-color: #2a3a4a; border-radius: 8px; padding: 0;">
+            <div class="modal-header" style="padding: 15px 20px; border-bottom: 1px solid #3a4a5e; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; color: #ecf0f1;" id="clearModalTitle">清除历史记录</h3>
+                <span class="modal-close" onclick="closeClearModal()" style="font-size: 24px; cursor: pointer;">&times;</span>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <p id="clearModalMessage" style="margin-top: 0; color: #ecf0f1;">确定要清除选中的历史记录吗？此操作不可恢复。</p>
+                <div style="background-color: #1e2a36; padding: 10px; border-radius: 4px; margin: 15px 0;">
+                    <p style="margin: 0; color: #e74c3c; font-weight: bold;" id="clearCountInfo">将删除 0 条记录</p>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 15px 20px; border-top: 1px solid #3a4a5e; display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn" onclick="closeClearModal()" style="background-color: #7f8c8d;">取消</button>
+                <button class="btn btn-danger" id="confirmClearBtn" onclick="confirmClearHistory()">确认清除</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

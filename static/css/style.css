@@ -1023,3 +1023,87 @@ input[type="date"] {
     justify-content: flex-end;
     min-width: fit-content; /* 根据内容调整最小宽度 */
 }
+
+/* 清除历史记录相关样式 */
+.btn-warning {
+    background-color: #f39c12;
+    color: white;
+    border: none;
+}
+
+.btn-warning:hover {
+    background-color: #e67e22;
+}
+
+.btn-info {
+    background-color: #3498db;
+    color: white;
+    border: none;
+}
+
+.btn-info:hover {
+    background-color: #2980b9;
+}
+
+/* 模态框样式优化 */
+#clearHistoryModal .modal-content {
+    animation: modalFadeIn 0.3s;
+}
+
+@keyframes modalFadeIn {
+    from {opacity: 0; transform: translateY(-20px);}
+    to {opacity: 1; transform: translateY(0);}
+}
+
+#clearHistoryModal .modal-header h3 {
+    font-size: 1.2rem;
+}
+
+#clearHistoryModal .modal-close {
+    color: #a0aec0;
+}
+
+#clearHistoryModal .modal-close:hover {
+    color: #ecf0f1;
+}
+
+/* 表格按钮样式 */
+.table-btn {
+    background: none;
+    border: none;
+    color: #7aa2d0;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.table-btn:hover {
+    background-color: #3a4a5e;
+    color: #ecf0f1;
+}
+
+.table-btn.delete-btn:hover {
+    background-color: #c0392b;
+    color: white;
+}
+
+/* 缺陷标签 */
+.defect-badge {
+    background-color: #e74c3c;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    display: inline-block;
+}
+
+.normal-badge {
+    background-color: #27ae60;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    display: inline-block;
+}
