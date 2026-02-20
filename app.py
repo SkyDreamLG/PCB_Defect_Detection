@@ -1558,7 +1558,6 @@ video_session_lock = Lock()
 
 class VideoDetectionSession:
     """视频检测会话"""
-
     def __init__(self):
         self.camera_active = False
         self.current_frame = None
@@ -1568,6 +1567,10 @@ class VideoDetectionSession:
         self.last_update = time.time()
         self.defect_info = []
         self.save_count = 0
+        # 添加以下两个字段来保存点击识别时的原始帧和处理状态
+        self.detected_frame = None  # 点击识别时的原始帧
+        self.detected_board_at_moment = None  # 点击识别时的电路板信息
+        self.extracted_pcb_info_at_moment = None  # 点击识别时的抠图信息
 
 
 # 获取视频检测会话
@@ -1885,6 +1888,28 @@ def detect_video_defect():
         if session.current_frame is None or not session.detected_board:
             return jsonify({'error': '没有检测到电路板'}), 400
 
+        # ===== 关键修改：保存点击识别时的原始状态 =====
+        # 复制当前帧和检测信息，确保保存时使用这一刻的原始数据
+        session.detected_frame = session.current_frame.copy()
+        session.detected_board_at_moment = session.detected_board.copy() if session.detected_board else None
+
+        if hasattr(session, 'extracted_pcb_info') and session.extracted_pcb_info:
+            # 深拷贝extracted_pcb_info（注意numpy数组需要特殊处理）
+            import copy
+            session.extracted_pcb_info_at_moment = {
+                'original_roi': session.extracted_pcb_info[
+                    'original_roi'].copy() if 'original_roi' in session.extracted_pcb_info else None,
+                'processed_roi': session.extracted_pcb_info[
+                    'processed_roi'].copy() if 'processed_roi' in session.extracted_pcb_info else None,
+                'bbox': copy.deepcopy(session.extracted_pcb_info.get('bbox')),
+                'corners': copy.deepcopy(session.extracted_pcb_info.get('corners')),
+                'width': session.extracted_pcb_info.get('width'),
+                'height': session.extracted_pcb_info.get('height')
+            }
+        else:
+            session.extracted_pcb_info_at_moment = None
+        # ===== 结束修改 =====
+
         # 获取检测器
         detector = get_detector()
 
@@ -1899,11 +1924,11 @@ def detect_video_defect():
             # 绘制检测结果
             pcb_with_boxes, detections = detector.draw_detections(processed_roi, results)
 
-            # 编码YOLO处理后的图像（纯base64，不带前缀）
+            # 编码YOLO处理后的图像
             _, buffer = cv2.imencode('.jpg', pcb_with_boxes)
             yolo_image = base64.b64encode(buffer).decode()
 
-            # 编码原始抠图（未降噪）
+            # 编码原始抠图
             original_pcb_img = session.extracted_pcb_info['original_roi']
             _, original_buffer = cv2.imencode('.jpg', original_pcb_img)
             original_pcb = base64.b64encode(original_buffer).decode()
@@ -1940,7 +1965,7 @@ def detect_video_defect():
             # 绘制检测结果
             pcb_with_boxes, detections = detector.draw_detections(square_roi, results)
 
-            # 编码图像（纯base64，不带前缀）
+            # 编码图像
             _, buffer = cv2.imencode('.jpg', pcb_with_boxes)
             yolo_image = base64.b64encode(buffer).decode()
 
@@ -1949,16 +1974,16 @@ def detect_video_defect():
 
         # 保存结果到会话
         session.yolo_result = {
-            'image': yolo_image,  # 纯base64，不带前缀
-            'original_pcb': original_pcb,  # 纯base64，不带前缀
+            'image': yolo_image,
+            'original_pcb': original_pcb,
             'detections': detections
         }
         session.defect_info = detections
 
         return jsonify({
             'success': True,
-            'yolo_image': f"data:image/jpeg;base64,{yolo_image}",  # 前端需要带前缀
-            'original_pcb': f"data:image/jpeg;base64,{original_pcb}",  # 前端需要带前缀
+            'yolo_image': f"data:image/jpeg;base64,{yolo_image}",
+            'original_pcb': f"data:image/jpeg;base64,{original_pcb}",
             'detections': detections,
             'has_defect': len(detections) > 0
         })
@@ -1980,61 +2005,60 @@ def save_video_result():
 
         session = get_video_session(session_id)
 
-        if session.current_frame is None:
-            return jsonify({'error': '没有可保存的图像'}), 400
+        # ===== 关键修改：使用点击识别时保存的帧，而不是current_frame =====
+        if session.detected_frame is None:
+            return jsonify({'error': '没有可保存的图像，请先点击"识别缺陷"按钮'}), 400
 
         # 生成保存路径
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         safe_filename = f"video_{timestamp}_{session.save_count}.jpg"
 
-        # 保存原始帧（使用与实时检测相同的绘制方式）
-        if session.detected_board:
-            # 在帧上绘制检测框（使用精确轮廓）
-            frame_with_box = session.current_frame.copy()
+        # 保存原始帧（使用点击识别时保存的检测信息）
+        if session.detected_board_at_moment:
+            # 在帧上绘制检测框
+            frame_with_box = session.detected_frame.copy()
 
-            # 从detected_board中获取轮廓信息
-            if session.detected_board.get('contour'):
+            # 从detected_board_at_moment中获取轮廓信息
+            if session.detected_board_at_moment.get('contour'):
                 # 将轮廓转换回numpy数组格式
-                contour_np = np.array(session.detected_board['contour'], dtype=np.int32)
+                contour_np = np.array(session.detected_board_at_moment['contour'], dtype=np.int32)
 
-                # 绘制精确轮廓（绿色，粗线）
+                # 绘制精确轮廓
                 cv2.drawContours(frame_with_box, [contour_np], -1, (0, 255, 0), 3)
 
-                # 绘制顶点（白色圆点）
+                # 绘制顶点
                 for point in contour_np:
                     x, y = point[0]
                     cv2.circle(frame_with_box, (x, y), 6, (255, 255, 255), -1)
                     cv2.circle(frame_with_box, (x, y), 3, (0, 255, 0), -1)
 
                 # 如果有角点信息，也绘制角点编号
-                if hasattr(session,
-                           'extracted_pcb_info') and session.extracted_pcb_info and 'corners' in session.extracted_pcb_info:
-                    corners = session.extracted_pcb_info['corners']
+                if session.extracted_pcb_info_at_moment and 'corners' in session.extracted_pcb_info_at_moment:
+                    corners = session.extracted_pcb_info_at_moment['corners']
                     for i, corner in enumerate(corners):
                         cx, cy = int(corner[0]), int(corner[1])
                         cv2.putText(frame_with_box, str(i + 1), (cx - 20, cy - 20),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
             else:
                 # 如果没有轮廓信息，使用边界框
-                x, y, w, h = session.detected_board['bbox']
+                x, y, w, h = session.detected_board_at_moment['bbox']
                 cv2.rectangle(frame_with_box, (x, y), (x + w, y + h), (0, 255, 0), 3)
 
             # 添加标签和信息
-            x, y, w, h = session.detected_board['bbox']
-            cv2.putText(frame_with_box, f"PCB Detected (Conf: {session.detected_board.get('confidence', 0):.2f})",
+            x, y, w, h = session.detected_board_at_moment['bbox']
+            cv2.putText(frame_with_box, f"PCB Detected (Conf: {session.detected_board_at_moment.get('confidence', 0):.2f})",
                         (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
             original_path = os.path.join(app.config['UPLOAD_FOLDER'], f"original_{safe_filename}")
             cv2.imwrite(original_path, frame_with_box)
         else:
             original_path = os.path.join(app.config['UPLOAD_FOLDER'], f"original_{safe_filename}")
-            cv2.imwrite(original_path, session.current_frame)
+            cv2.imwrite(original_path, session.detected_frame)
 
-        # 保存YOLO处理后的图像（如果有）
+        # 保存YOLO处理后的图像（这部分保持不变）
         detected_path = None
         if session.yolo_result and session.yolo_result.get('image'):
             try:
-                # 检查图像数据格式
                 image_data = session.yolo_result['image']
                 if ',' in image_data:
                     yolo_image_data = image_data.split(',')[1]
@@ -2053,7 +2077,7 @@ def save_video_result():
             except Exception as e:
                 logger.error(f"解码YOLO图像失败: {e}")
 
-        # 保存原始抠图图像（如果有）
+        # 保存原始抠图图像
         original_pcb_path = None
         if session.yolo_result and session.yolo_result.get('original_pcb'):
             try:
