@@ -6,20 +6,22 @@
     <title>PCB视频检测</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        /* 视频检测专用样式 */
+        /* 视频检测样式 */
         .video-container {
             display: flex;
             height: 100vh;
-            padding: 16px;
-            gap: 16px;
-            background: #1e1f2c;
+            padding: 24px;
+            gap: 24px;
+            background: #F4F6F9;
         }
 
         /* 左侧控制面板 */
         .video-control-panel {
-            width: 300px;
-            background-color: #2a2c3b;
-            border: 1px solid #3e4052;
+            width: 320px;
+            background-color: #FFFFFF;
+            border-radius: 32px;
+            box-shadow: 0 8px 20px -8px rgba(0,0,0,0.08);
+            border: 1px solid #E2E8F0;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -27,120 +29,161 @@
         }
 
         .video-panel-header {
-            padding: 18px 20px;
-            background: #1b1e2a;
-            border-bottom: 2px solid #3a6ea5;
+            padding: 20px 24px;
+            background: #FFFFFF;
+            border-bottom: 1px solid #E2E8F0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .video-panel-header h2 {
-            font-size: 1.3rem;
-            font-weight: 500;
-            color: #fff;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #1E4A7A;
             margin: 0;
         }
 
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: #1E4A7A;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 8px 16px;
+            border: 1px solid #1E4A7A;
+            border-radius: 40px;
+            transition: all 0.2s;
+        }
+
+        .back-link:hover {
+            background: #1E4A7A;
+            color: white;
+        }
+
         .video-panel-content {
-            padding: 20px 18px;
+            padding: 24px 20px;
             flex: 1;
             overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #CBD5E0 #FFFFFF;
+        }
+
+        .video-panel-content::-webkit-scrollbar {
+            width: 4px;
+        }
+        .video-panel-content::-webkit-scrollbar-track {
+            background: #FFFFFF;
+        }
+        .video-panel-content::-webkit-scrollbar-thumb {
+            background: #CBD5E0;
+            border-radius: 8px;
         }
 
         .video-panel-section {
-            margin-bottom: 24px;
+            margin-bottom: 28px;
             padding-bottom: 20px;
-            border-bottom: 1px solid #3e4055;
+            border-bottom: 1px solid #E2E8F0;
         }
-
         .video-panel-section:last-child {
             border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
         }
 
         .video-section-title {
             font-size: 0.9rem;
             font-weight: 600;
             text-transform: uppercase;
-            color: #b0c4de;
+            color: #718096;
             margin-bottom: 16px;
             letter-spacing: 0.5px;
         }
 
+        /* 按钮样式复用全局按钮 */
         .video-btn {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             margin-bottom: 10px;
-            background: #2b3d5c;
-            border: 1px solid #4b6f9a;
-            color: #ecf3ff;
-            font-size: 0.9rem;
-            font-weight: 500;
-            text-transform: uppercase;
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 40px;
             cursor: pointer;
-            transition: 0.15s;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
         }
-
-        .video-btn:hover:not(:disabled) {
-            background: #31639c;
-            border-color: #7aa2d0;
-        }
-
         .video-btn.primary {
-            background: #2a4b78;
-            border-color: #5e87b9;
+            background: #1E4A7A;
+            color: white;
         }
-
+        .video-btn.primary:hover:not(:disabled) {
+            background: #153E6F;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -8px rgba(30, 74, 122, 0.3);
+        }
         .video-btn.success {
-            background: #2d5940;
-            border-color: #3f8364;
+            background: #1E4A7A;
+            color: white;
         }
-
+        .video-btn.success:hover:not(:disabled) {
+            background: #153E6F;
+            transform: translateY(-2px);
+        }
         .video-btn.danger {
-            background: #5a353f;
-            border-color: #a56b6b;
-            color: #ffd7d7;
+            background: #FFFFFF;
+            color: #E53E3E;
+            border: 1px solid #E2E8F0;
         }
-
+        .video-btn.danger:hover:not(:disabled) {
+            background: #E53E3E;
+            border-color: #E53E3E;
+            color: white;
+        }
         .video-btn:disabled {
-            opacity: 0.4;
+            opacity: 0.5;
             cursor: not-allowed;
         }
 
+        /* 状态信息卡片 */
         .video-status {
-            background: #1f2130;
-            border: 1px solid #3e4055;
-            padding: 12px;
-            margin-top: 16px;
+            background: #F9FAFB;
+            border-radius: 24px;
+            padding: 18px;
+            border: 1px solid #E2E8F0;
         }
 
         .status-item {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-size: 0.85rem;
         }
 
         .status-label {
-            color: #99a6c2;
+            color: #718096;
         }
 
         .status-value {
-            color: #d4e0fc;
+            color: #2D3748;
             font-weight: 600;
         }
 
         .status-value.has-board {
-            color: #4f9e7a;
+            color: #48BB78;
         }
 
         .status-value.no-board {
-            color: #f05454;
+            color: #E53E3E;
         }
 
         .status-value.has-detection {
-            color: #5f9df3;
+            color: #1E4A7A;
         }
 
         /* 右侧内容区域 */
@@ -148,7 +191,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 20px;
             overflow: hidden;
         }
 
@@ -156,29 +199,31 @@
         .video-top {
             flex: 1;
             display: flex;
-            gap: 16px;
+            gap: 20px;
             min-height: 0;
         }
 
         .video-card {
             flex: 1;
-            background: #2a2c3b;
-            border: 1px solid #3e4052;
+            background: #FFFFFF;
+            border-radius: 32px;
+            box-shadow: 0 8px 20px -8px rgba(0,0,0,0.08);
+            border: 1px solid #E2E8F0;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
         .video-card-header {
-            padding: 12px 16px;
-            background: #1b1e2a;
-            border-bottom: 2px solid #3a6ea5;
+            padding: 16px 20px;
+            background: #FFFFFF;
+            border-bottom: 1px solid #E2E8F0;
         }
 
         .video-card-header h3 {
-            font-size: 1rem;
-            font-weight: 500;
-            color: #d0dcf0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2D3748;
             margin: 0;
             display: flex;
             align-items: center;
@@ -188,7 +233,7 @@
         .video-card-body {
             flex: 1;
             padding: 16px;
-            background: #212332;
+            background: #F9FAFB;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -199,30 +244,33 @@
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
-            border: 2px solid #3b5580;
-            background: #141824;
+            border-radius: 24px;
+            border: 1px solid #E2E8F0;
+            background: #FFFFFF;
         }
 
         /* 下半部分 - 缺陷信息 */
         .video-bottom {
-            height: 200px;
-            background: #2a2c3b;
-            border: 1px solid #3e4052;
+            height: 220px;
+            background: #FFFFFF;
+            border-radius: 32px;
+            box-shadow: 0 8px 20px -8px rgba(0,0,0,0.08);
+            border: 1px solid #E2E8F0;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
         .video-bottom-header {
-            padding: 12px 16px;
-            background: #1b1e2a;
-            border-bottom: 2px solid #c05a5a;
+            padding: 16px 20px;
+            background: #FFFFFF;
+            border-bottom: 1px solid #E2E8F0;
         }
 
         .video-bottom-header h3 {
-            font-size: 1rem;
-            font-weight: 500;
-            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2D3748;
             margin: 0;
             display: flex;
             align-items: center;
@@ -231,69 +279,55 @@
 
         .defect-list-container {
             flex: 1;
-            padding: 16px;
+            padding: 16px 20px;
             overflow-y: auto;
-            background: #212332;
+            background: #F9FAFB;
         }
 
         .defect-item {
-            background: #1f2537;
-            padding: 12px 16px;
-            margin-bottom: 8px;
+            background: #FFFFFF;
+            padding: 14px 18px;
+            margin-bottom: 10px;
             border-left: 6px solid;
+            border-radius: 20px;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 8px;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            border: 1px solid #E2E8F0;
         }
 
-        .defect-item.missing_hole { border-left-color: #f05454; }
-        .defect-item.mouse_bite { border-left-color: #8ecf8e; }
-        .defect-item.short_circuit { border-left-color: #5f9df3; }
+        .defect-item.missing_hole { border-left-color: #E53E3E; }
+        .defect-item.mouse_bite { border-left-color: #48BB78; }
+        .defect-item.short_circuit { border-left-color: #1E4A7A; }
 
         .defect-detail {
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 4px;
         }
 
         .defect-label {
             font-size: 0.7rem;
-            color: #99a6c2;
+            color: #718096;
             text-transform: uppercase;
         }
 
         .defect-value {
             font-size: 0.9rem;
-            color: #e2e8f0;
-            font-weight: 500;
+            color: #2D3748;
+            font-weight: 600;
         }
 
         .no-defect-message {
             text-align: center;
             padding: 40px 16px;
-            color: #6f7c9f;
-            border: 1px dashed #4b5270;
+            color: #A0AEC0;
+            border: 1px dashed #E2E8F0;
+            border-radius: 24px;
+            background: #FFFFFF;
         }
 
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            color: #7aa2d0;
-            text-decoration: none;
-            font-size: 0.9rem;
-            padding: 6px 12px;
-            border: 1px solid #4b6f9a;
-            margin-top: 10px;
-        }
-
-        .back-link:hover {
-            background: #2a4b78;
-            color: white;
-        }
-    </style>
-    <!-- 摄像头选择模态框样式 - 贴左边悬浮 -->
-    <style>
+        /* 摄像头选择模态框 - 贴左边悬浮，亮色主题 */
         .modal {
             display: none;
             position: fixed;
@@ -302,23 +336,24 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: transparent;  /* 移除遮罩 */
-            pointer-events: none;  /* 让点击穿透，除了模态框本身 */
+            background-color: transparent;
+            pointer-events: none;
         }
 
         .modal-content {
             position: absolute;
-            left: 20px;
+            left: 24px;
             top: 50%;
             transform: translateY(-50%);
-            width: 360px;
-            background: #2a2c3b;
-            border: 2px solid #3a6ea5;
-            border-radius: 8px;
+            width: 380px;
+            background: #FFFFFF;
+            border-radius: 40px;
+            border: 1px solid #E2E8F0;
             padding: 0;
-            box-shadow: 8px 8px 20px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 20px 40px -12px rgba(30, 74, 122, 0.2);
             animation: slideInLeft 0.3s ease;
-            pointer-events: auto;  /* 模态框本身可以点击 */
+            pointer-events: auto;
+            overflow: hidden;
         }
 
         @keyframes slideInLeft {
@@ -327,25 +362,25 @@
                 opacity: 0;
             }
             to {
-                left: 20px;
+                left: 24px;
                 opacity: 1;
             }
         }
 
         .modal-header {
-            padding: 15px 20px;
-            background: #1b1e2a;
-            border-bottom: 2px solid #3a6ea5;
+            padding: 18px 24px;
+            background: #FFFFFF;
+            border-bottom: 1px solid #E2E8F0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-radius: 8px 8px 0 0;
         }
 
         .modal-header h3 {
             margin: 0;
-            color: #fff;
-            font-size: 1.1rem;
+            color: #1E4A7A;
+            font-size: 1.2rem;
+            font-weight: 600;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -353,66 +388,59 @@
 
         .modal-header h3::before {
             content: "📷";
-            font-size: 1.2rem;
+            font-size: 1.3rem;
         }
 
         .modal-close {
-            color: #99a6c2;
-            font-size: 24px;
+            color: #718096;
+            font-size: 28px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 400;
             line-height: 1;
+            transition: color 0.2s;
         }
-
         .modal-close:hover {
-            color: #fff;
+            color: #E53E3E;
         }
 
         .modal-body {
-            padding: 20px;
-            background: #212332;
-            border-radius: 0 0 8px 8px;
+            padding: 24px;
+            background: #F9FAFB;
         }
 
-        /* 摄像头选择选项样式 */
         .camera-option {
             display: flex;
             align-items: center;
-            padding: 12px 15px;
-            background: #1f2130;
-            border: 1px solid #3e4055;
+            padding: 14px 16px;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 40px;
             cursor: pointer;
             transition: all 0.2s;
-            border-left: 4px solid transparent;
-            margin-bottom: 8px;
-            border-radius: 4px;
+            margin-bottom: 10px;
         }
-
         .camera-option:hover {
-            background: #2f354a;
-            border-color: #5f7aa6;
-            transform: translateX(2px);
+            background: #F1F5F9;
+            border-color: #1E4A7A;
         }
-
         .camera-option.selected {
-            border-left-color: #3a6ea5;
-            background: #262c3d;
-            border-color: #3a6ea5;
-            box-shadow: 0 2px 8px rgba(58, 110, 165, 0.3);
+            border-color: #1E4A7A;
+            background: #EFF6FF;
+            box-shadow: 0 4px 12px rgba(30, 74, 122, 0.1);
         }
 
         .camera-option input[type="radio"] {
-            margin-right: 12px;
-            accent-color: #3a6ea5;
-            width: 16px;
-            height: 16px;
+            margin-right: 14px;
+            accent-color: #1E4A7A;
+            width: 18px;
+            height: 18px;
             cursor: pointer;
         }
 
         .camera-option label {
             flex: 1;
-            color: #e0e2e8;
-            font-size: 0.9rem;
+            color: #2D3748;
+            font-size: 0.95rem;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -421,35 +449,26 @@
 
         .camera-badge {
             font-size: 0.7rem;
-            background: #2a4b78;
-            color: #ecf3ff;
-            padding: 3px 8px;
-            border-radius: 4px;
-            margin-left: 10px;
+            background: #E2E8F0;
+            color: #4A5568;
+            padding: 4px 10px;
+            border-radius: 30px;
+            margin-left: 12px;
         }
 
         .modal-footer {
             display: flex;
-            gap: 10px;
-            margin-top: 20px;
-            border-top: 1px solid #3e4055;
-            padding-top: 20px;
+            gap: 12px;
+            margin-top: 24px;
         }
 
         .modal-footer .video-btn {
             flex: 1;
             margin: 0;
-            padding: 10px;
-            border-radius: 4px;
+            padding: 12px;
         }
 
-        .modal-footer .video-btn.primary {
-            background: #2a4b78;
-        }
-
-        .modal-footer .video-btn.primary:hover {
-            background: #31639c;
-        }
+        /* Toast 复用全局样式已在 style.css 定义 */
     </style>
 </head>
 <body>
@@ -508,7 +527,7 @@
                 <!-- 提示信息 -->
                 <div class="video-panel-section">
                     <div class="video-section-title">使用说明</div>
-                    <div style="color: #99a6c2; font-size: 0.85rem; line-height: 1.6;">
+                    <div style="color: #718096; font-size: 0.85rem; line-height: 1.6;">
                         <p>1. 点击"启动摄像头"开始采集</p>
                         <p>2. 系统自动检测画面中的电路板（绿色框）</p>
                         <p>3. 点击"识别缺陷"对当前帧进行YOLO检测</p>
@@ -563,12 +582,12 @@
                 <span class="modal-close" onclick="cancelCameraSelection()">&times;</span>
             </div>
             <div class="modal-body">
-                <p style="color: #b0c4de; margin-bottom: 15px;">检测到多个摄像头：</p>
+                <p style="color: #718096; margin-bottom: 15px;">检测到多个摄像头：</p>
                 <div id="cameraOptions" style="display: flex; flex-direction: column; gap: 10px;">
                     <!-- 选项会动态添加到这里 -->
                 </div>
                 <div class="modal-footer">
-                    <button class="video-btn" onclick="cancelCameraSelection()" style="background: #4a4f62; border-color: #6a7085;">取消</button>
+                    <button class="video-btn" onclick="cancelCameraSelection()" style="background: #FFFFFF; color: #718096; border: 1px solid #E2E8F0;">取消</button>
                     <button class="video-btn primary" onclick="confirmCameraSelection()">确定</button>
                 </div>
             </div>
@@ -579,18 +598,18 @@
     <div id="toast" class="toast"></div>
 
     <script>
-        // 视频检测JavaScript
+        // 视频检测JavaScript (完整保留原逻辑)
         const video = document.createElement('video');
         let mediaStream = null;
         let sessionId = null;
         let isCameraActive = false;
         let animationFrame = null;
         let saveCount = 0;
-        let hasYoloResult = false;  // 标记是否有YOLO检测结果
-        let lastSavedDetection = null;  // 记录上次保存的检测结果，防止重复保存
+        let hasYoloResult = false;
+        let lastSavedDetection = null;
 
         // 摄像头选择相关变量
-        let pendingResolve = null;  // 用于保存 Promise 的 resolve 函数
+        let pendingResolve = null;
         let selectedDeviceId = null;
 
         // DOM元素
@@ -614,7 +633,6 @@
 
         // 更新保存按钮状态
         function updateSaveButton() {
-            // 保存按钮可用条件：有YOLO检测结果 且 当前检测结果与上次保存的不同
             if (hasYoloResult && lastSavedDetection !== sessionId + '_' + hasYoloResult) {
                 saveBtn.disabled = false;
             } else {
@@ -631,7 +649,6 @@
                 const modal = document.getElementById('cameraModal');
                 const optionsDiv = document.getElementById('cameraOptions');
 
-                // 清空并添加选项
                 optionsDiv.innerHTML = '';
 
                 devices.forEach((device, index) => {
@@ -641,7 +658,6 @@
                     const optionDiv = document.createElement('div');
                     optionDiv.className = 'camera-option' + (isDefault ? ' selected' : '');
 
-                    // 如果是默认选项，设置selectedDeviceId
                     if (isDefault) {
                         selectedDeviceId = device.deviceId;
                     }
@@ -679,8 +695,6 @@
         // 选择摄像头选项
         function selectCameraOption(deviceId) {
             selectedDeviceId = deviceId;
-
-            // 更新选中样式
             document.querySelectorAll('.camera-option').forEach(opt => {
                 opt.classList.remove('selected');
                 const radio = opt.querySelector('input[type="radio"]');
@@ -695,7 +709,6 @@
             if (selectedDeviceId) {
                 const modal = document.getElementById('cameraModal');
                 modal.style.display = 'none';
-
                 if (pendingResolve) {
                     pendingResolve(selectedDeviceId);
                     pendingResolve = null;
@@ -710,7 +723,6 @@
         function cancelCameraSelection() {
             const modal = document.getElementById('cameraModal');
             modal.style.display = 'none';
-
             if (pendingResolve) {
                 pendingResolve(null);
                 pendingResolve = null;
@@ -729,7 +741,6 @@
         // 启动摄像头
         startCameraBtn.addEventListener('click', async () => {
             try {
-                // 先强制停止任何可能存在的流
                 if (mediaStream) {
                     mediaStream.getTracks().forEach(track => track.stop());
                     mediaStream = null;
@@ -739,7 +750,6 @@
                     video.srcObject = null;
                 }
 
-                // 获取所有摄像头设备
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(d => d.kind === 'videoinput');
 
@@ -749,13 +759,10 @@
 
                 console.log('找到摄像头:', videoDevices.map(d => d.label || '未知'));
 
-                // 如果有多个摄像头，显示选择弹窗
                 let selectedDeviceId = null;
                 if (videoDevices.length > 1) {
                     showToast('检测到多个摄像头，请选择要使用的设备', 'info');
                     selectedDeviceId = await showCameraModal(videoDevices);
-
-                    // 如果用户取消选择，直接返回
                     if (!selectedDeviceId) {
                         showToast('已取消摄像头选择', 'info');
                         return;
@@ -764,11 +771,9 @@
                     selectedDeviceId = videoDevices[0].deviceId;
                 }
 
-                // 尝试摄像头配置
                 let stream = null;
                 let lastError = null;
 
-                // 先尝试用户选择的设备
                 try {
                     console.log('尝试选择的设备');
                     stream = await navigator.mediaDevices.getUserMedia({
@@ -784,11 +789,9 @@
                     lastError = e;
                 }
 
-                // 如果选择的设备失败，逐个尝试其他设备
                 if (!stream) {
                     for (const device of videoDevices) {
-                        if (device.deviceId === selectedDeviceId) continue; // 已经试过了
-
+                        if (device.deviceId === selectedDeviceId) continue;
                         try {
                             console.log('尝试备用设备:', device.label || '未知');
                             stream = await navigator.mediaDevices.getUserMedia({
@@ -807,7 +810,6 @@
                     }
                 }
 
-                // 最后尝试不带 deviceId 的配置
                 if (!stream) {
                     const constraintsList = [
                         { video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'environment' } },
@@ -832,49 +834,39 @@
                     throw lastError || new Error('所有摄像头配置都失败');
                 }
 
-                // 成功获取流
                 video.srcObject = stream;
                 await video.play();
-
                 mediaStream = stream;
 
-                // 显示当前使用的摄像头信息
                 const track = stream.getVideoTracks()[0];
                 const settings = track.getSettings();
                 const deviceLabel = track.label;
                 console.log('当前使用摄像头:', deviceLabel);
                 console.log('摄像头设置:', settings);
 
-                // 创建会话
                 sessionId = generateSessionId();
-
-                // 启动帧处理
                 isCameraActive = true;
                 processVideoFrame();
 
-                // 更新UI
                 startCameraBtn.disabled = true;
                 stopCameraBtn.disabled = false;
                 detectBtn.disabled = false;
                 cameraStatus.textContent = `已连接 (${deviceLabel.split(' ')[0] || '摄像头'})`;
-                cameraStatus.style.color = '#4f9e7a';
+                cameraStatus.style.color = '#48BB78';
 
                 showToast(`摄像头启动成功: ${deviceLabel}`, 'success');
 
             } catch (error) {
                 console.error('摄像头启动失败:', error);
-
                 let errorMessage = '摄像头启动失败: ';
                 if (error.name === 'NotReadableError') {
                     errorMessage += '摄像头被其他应用占用，请关闭其他使用摄像头的程序';
                 } else {
                     errorMessage += error.message;
                 }
-
                 showToast(errorMessage, 'error');
-
                 cameraStatus.textContent = '连接失败';
-                cameraStatus.style.color = '#f05454';
+                cameraStatus.style.color = '#E53E3E';
                 startCameraBtn.disabled = false;
                 stopCameraBtn.disabled = true;
             }
@@ -886,7 +878,6 @@
                 mediaStream.getTracks().forEach(track => track.stop());
                 mediaStream = null;
             }
-
             video.srcObject = null;
             isCameraActive = false;
             if (animationFrame) {
@@ -894,7 +885,6 @@
                 animationFrame = null;
             }
 
-            // 清除会话
             if (sessionId) {
                 fetch('/api/video/clear_session', {
                     method: 'POST',
@@ -904,7 +894,6 @@
                 sessionId = null;
             }
 
-            // 更新UI
             startCameraBtn.disabled = false;
             stopCameraBtn.disabled = true;
             detectBtn.disabled = true;
@@ -929,18 +918,15 @@
                 return;
             }
 
-            // 创建画布并绘制当前帧
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            // 转换为base64
             const imageData = canvas.toDataURL('image/jpeg', 0.8);
 
             try {
-                // 发送到后端处理
                 const response = await fetch('/api/video/process_frame', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -953,18 +939,16 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // 更新摄像头画面
                     cameraFeed.src = result.processed_image;
 
-                    // 更新电路板检测状态
                     if (result.has_board) {
                         boardStatus.textContent = '已检测到';
                         boardStatus.className = 'status-value has-board';
-                        detectBtn.disabled = false;  // 检测到电路板后才能进行YOLO检测
+                        detectBtn.disabled = false;
                     } else {
                         boardStatus.textContent = '未检测到';
                         boardStatus.className = 'status-value no-board';
-                        detectBtn.disabled = true;  // 没有电路板时禁用识别按钮
+                        detectBtn.disabled = true;
                     }
                 }
             } catch (error) {
@@ -994,24 +978,14 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // 更新YOLO结果图像
                     yoloResult.src = result.yolo_image;
-
-                    // 更新缺陷列表
                     updateDefectList(result.detections);
-
-                    // 更新缺陷数量
                     defectCountSpan.textContent = result.detections.length;
 
-                    // 更新YOLO检测状态
                     hasYoloResult = true;
                     yoloStatus.textContent = '已检测';
                     yoloStatus.className = 'status-value has-detection';
-
-                    // 重置上次保存的记录，允许保存这个新的检测结果
                     lastSavedDetection = null;
-
-                    // 更新保存按钮状态
                     updateSaveButton();
 
                     showToast('缺陷识别完成', 'success');
@@ -1049,13 +1023,8 @@
                 if (result.success) {
                     saveCount++;
                     saveCountSpan.textContent = saveCount;
-
-                    // 记录这次保存的检测结果，防止重复保存
                     lastSavedDetection = sessionId + '_' + hasYoloResult;
-
-                    // 更新保存按钮状态
                     updateSaveButton();
-
                     showToast('保存成功', 'success');
                 } else {
                     showToast(result.error || '保存失败', 'error');
@@ -1066,7 +1035,6 @@
             } finally {
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '💾 保存结果';
-                // 注意：这里重新启用保存按钮，但updateSaveButton()会根据条件决定是否真的可用
                 updateSaveButton();
             }
         });

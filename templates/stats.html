@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PCB检测数据统计</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/stats.css') }}">
-    <!-- 引入Chart.js用于图表展示 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -71,7 +71,7 @@
             </div>
         </div>
 
-        <!-- 图表区域 -->
+        <!-- 图表网格 -->
         <div class="charts-grid">
             <!-- 缺陷类型分布 -->
             <div class="chart-card">
@@ -123,7 +123,7 @@
                     <h3>缺陷详情</h3>
                     <span class="chart-subtitle">各类型缺陷详细信息</span>
                 </div>
-                <div class="chart-body" style="overflow-x: auto;">
+                <div class="chart-body" style="overflow-x: auto; padding: 0 20px 20px;">
                     <table class="stats-table" id="defectDetailTable">
                         <thead>
                             <tr>
