@@ -42,11 +42,11 @@ async function loadAllData() {
         const endDate = document.getElementById('endDate').value;
 
         await Promise.all([
-            loadOverviewStats(startDate, endDate),  // 传递日期参数
+            loadOverviewStats(startDate, endDate),
             loadDefectTypeStats(startDate, endDate),
             loadDailyTrend(),
-            loadConfidenceDistribution(startDate, endDate),  // 传递日期参数
-            loadAllDefectRecords(startDate, endDate)  // 传递日期参数
+            loadConfidenceDistribution(startDate, endDate),
+            loadAllDefectRecords(startDate, endDate)
         ]);
     } catch (error) {
         console.error('加载数据失败:', error);
@@ -251,7 +251,9 @@ window.changePageSize = () => {
     updatePagination();
 };
 
-// 更新比例图表
+// ========== 图表更新函数（仅修改颜色配置） ==========
+
+// 更新比例图表（环形图）
 function updateRatioChart(normal, defect) {
     const ctx = document.getElementById('ratioChart').getContext('2d');
 
@@ -265,28 +267,37 @@ function updateRatioChart(normal, defect) {
             labels: ['合格PCB', '缺陷PCB'],
             datasets: [{
                 data: [normal, defect],
-                backgroundColor: ['#4f9e7a', '#f05454'],
-                borderColor: ['#2d5940', '#8b3d3d'],
-                borderWidth: 2
+                backgroundColor: ['#4caf7f', '#ff6b6b'],          // 柔和绿 / 亮红
+                borderColor: ['#2d7a55', '#b24545'],
+                borderWidth: 2,
+                hoverOffset: 8
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            cutout: '70%',
             plugins: {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        color: '#e0e2e8',
-                        font: { size: 12 }
+                        color: '#eef2f6',
+                        font: { size: 12, weight: 500 }
                     }
+                },
+                tooltip: {
+                    backgroundColor: '#1e2433',
+                    titleColor: '#ffffff',
+                    bodyColor: '#cdd9f0',
+                    borderColor: '#4f8cd1',
+                    borderWidth: 1
                 }
             }
         }
     });
 }
 
-// 更新缺陷类型图表
+// 更新缺陷类型图表（柱状图）
 function updateDefectTypeChart(data) {
     const ctx = document.getElementById('defectTypeChart').getContext('2d');
 
@@ -301,9 +312,19 @@ function updateDefectTypeChart(data) {
             datasets: [{
                 label: '缺陷数量',
                 data: data.map(item => item.count),
-                backgroundColor: data.map(item => item.color),
-                borderColor: '#fff',
-                borderWidth: 1
+                backgroundColor: [
+                    'rgba(255, 107, 107, 0.8)',   // missing_hole 红
+                    'rgba(142, 207, 142, 0.8)',   // mouse_bite 绿
+                    'rgba(95, 157, 243, 0.8)'     // short_circuit 蓝
+                ],
+                borderColor: [
+                    '#ff8a8a',
+                    '#b2e0b2',
+                    '#7fb0ff'
+                ],
+                borderWidth: 1,
+                borderRadius: 6,
+                barPercentage: 0.65
             }]
         },
         options: {
@@ -312,22 +333,27 @@ function updateDefectTypeChart(data) {
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: '#3e4052' },
-                    ticks: { color: '#e0e2e8' }
+                    grid: { color: '#2f3545' },
+                    ticks: { color: '#cdd9f0', stepSize: 1 }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#e0e2e8' }
+                    ticks: { color: '#cdd9f0', font: { weight: 500 } }
                 }
             },
             plugins: {
-                legend: { display: false }
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e2433',
+                    titleColor: '#ffffff',
+                    bodyColor: '#cdd9f0'
+                }
             }
         }
     });
 }
 
-// 更新每日趋势图表
+// 更新每日趋势图表（折线图）
 function updateDailyTrendChart(data) {
     const ctx = document.getElementById('dailyTrendChart').getContext('2d');
 
@@ -343,18 +369,26 @@ function updateDailyTrendChart(data) {
                 {
                     label: '总数',
                     data: data.map(item => item.total),
-                    borderColor: '#3a6ea5',
-                    backgroundColor: 'rgba(58, 110, 165, 0.1)',
-                    tension: 0.4,
-                    fill: true
+                    borderColor: '#4f8cd1',
+                    backgroundColor: 'rgba(79, 140, 209, 0.1)',
+                    tension: 0.3,
+                    fill: true,
+                    pointBackgroundColor: '#4f8cd1',
+                    pointBorderColor: '#ffffff',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
                 },
                 {
                     label: '缺陷数',
                     data: data.map(item => item.defect),
-                    borderColor: '#f05454',
-                    backgroundColor: 'rgba(240, 84, 84, 0.1)',
-                    tension: 0.4,
-                    fill: true
+                    borderColor: '#ff6b6b',
+                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                    tension: 0.3,
+                    fill: true,
+                    pointBackgroundColor: '#ff6b6b',
+                    pointBorderColor: '#ffffff',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
                 }
             ]
         },
@@ -364,28 +398,33 @@ function updateDailyTrendChart(data) {
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: '#3e4052' },
-                    ticks: { color: '#e0e2e8' }
+                    grid: { color: '#2f3545' },
+                    ticks: { color: '#cdd9f0' }
                 },
                 x: {
                     grid: { display: false },
                     ticks: {
-                        color: '#e0e2e8',
+                        color: '#cdd9f0',
                         maxRotation: 45,
-                        minRotation: 45
+                        minRotation: 30
                     }
                 }
             },
             plugins: {
                 legend: {
-                    labels: { color: '#e0e2e8' }
+                    labels: { color: '#eef2f6', usePointStyle: true, pointStyle: 'circle' }
+                },
+                tooltip: {
+                    backgroundColor: '#1e2433',
+                    titleColor: '#ffffff',
+                    bodyColor: '#cdd9f0'
                 }
             }
         }
     });
 }
 
-// 更新置信度分布图表
+// 更新置信度分布图表（柱状图）
 function updateConfidenceChart(data) {
     const ctx = document.getElementById('confidenceChart').getContext('2d');
 
@@ -400,9 +439,11 @@ function updateConfidenceChart(data) {
             datasets: [{
                 label: '缺陷数量',
                 data: data.map(item => item.count),
-                backgroundColor: '#5f9df3',
-                borderColor: '#3a6ea5',
-                borderWidth: 1
+                backgroundColor: 'rgba(79, 140, 209, 0.7)',
+                borderColor: '#4f8cd1',
+                borderWidth: 1,
+                borderRadius: 6,
+                barPercentage: 0.7
             }]
         },
         options: {
@@ -411,16 +452,21 @@ function updateConfidenceChart(data) {
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: '#3e4052' },
-                    ticks: { color: '#e0e2e8' }
+                    grid: { color: '#2f3545' },
+                    ticks: { color: '#cdd9f0', stepSize: 1 }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#e0e2e8' }
+                    ticks: { color: '#cdd9f0' }
                 }
             },
             plugins: {
-                legend: { display: false }
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e2433',
+                    titleColor: '#ffffff',
+                    bodyColor: '#cdd9f0'
+                }
             }
         }
     });
@@ -519,7 +565,6 @@ async function applyDateFilter() {
     }
 }
 
-// 刷新所有数据
 // 刷新所有数据
 async function refreshAllData() {
     // 获取当前选择的日期范围

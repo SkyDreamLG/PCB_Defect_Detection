@@ -4,588 +4,213 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>检测记录详情 - {{ record.filename }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* ========== 全局基础样式 ========== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Noto Sans', system-ui, sans-serif;
-        }
-
         body {
-            background-color: #1e1f2c;
-            color: #e0e2e8;
-            font-size: 14px;
-            line-height: 1.5;
-            min-height: 100vh;
-            padding: 24px;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-        }
-
-        /* 主容器 — 参考 .stats-container & .card 风格 */
-        .detail-container {
-            max-width: 1200px;
-            width: 100%;
-            background-color: #2a2c3b;
-            border: 1px solid #3e4052;
-            box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.3);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        /* ========== 头部 (参考 .card-header / .panel-header) ========== */
-        .detail-header {
-            padding: 18px 24px;
-            background: #1b1e2a;
-            border-bottom: 2px solid #3a6ea5;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-
-        .header-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .header-title h1 {
-            font-size: 1.5rem;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            color: #fff;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            padding: 30px;
+            background: #F4F4F4;
+            color: #1A1A1A;
         }
-
-        .header-title h1::before {
-            content: "📋";
-            font-size: 1.6rem;
-            opacity: 0.9;
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #FFFFFF;
+            padding: 36px 40px;
+            border-radius: 48px;
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.05);
         }
-
-        .header-actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
+        h1 {
+            color: #1A1A1A;
+            border-bottom: 2px solid #FF6B4E;
+            padding-bottom: 16px;
+            margin-top: 0;
+            font-weight: 600;
+            font-size: 2rem;
         }
-
-        /* 按钮样式 — 完全对齐原风格 .btn, .nav-btn */
-        .btn {
-            padding: 10px 20px;
-            background: #2b3d5c;
-            border: 1px solid #4b6f9a;
-            color: #ecf3ff;
-            font-size: 0.9rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: 0.15s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            text-decoration: none;
-            border-radius: 0;
-            white-space: nowrap;
-        }
-
-        .btn:hover {
-            background: #31639c;
-            border-color: #7aa2d0;
-            box-shadow: inset 0 -2px 0 #0a1f33;
-        }
-
-        .btn-primary {
-            background: #2a4b78;
-            border-color: #5e87b9;
-        }
-
-        .btn-primary:hover {
-            background: #31639c;
-            border-color: #7aa2d0;
-        }
-
-        .btn-secondary {
-            background: #4a4f62;
-            border-color: #6a7085;
-        }
-
-        .btn-secondary:hover {
-            background: #5f657c;
-            border-color: #7f85a0;
-        }
-
-        /* ========== 内容主体 ========== */
-        .detail-content {
-            padding: 24px;
-            background: #212332;
-            flex: 1;
-            overflow-y: auto;
-        }
-
-        /* ========== 信息网格 — 参考 .stats-overview & .info-item ========== */
         .info-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 16px;
-            margin-bottom: 28px;
+            grid-template-columns: repeat(2,1fr);
+            gap: 20px;
+            margin: 30px 0;
         }
-
-        .info-card {
-            background: #2a2c3b;
-            border: 1px solid #3e4052;
-            padding: 18px 16px;
-            border-left: 6px solid #3a6ea5;
-            transition: 0.2s;
+        .info-item {
+            background: #F8F8F8;
+            padding: 18px 22px;
+            border-left: 6px solid #FF6B4E;
+            border-radius: 24px;
         }
-
-        .info-card:hover {
-            background: #2f3447;
-            border-color: #4f5b7a;
-        }
-
-        .info-card .label {
-            font-size: 0.8rem;
-            color: #99a6c2;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
+        .label {
+            font-weight: 600;
+            color: #888888;
+            display: block;
             margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .info-card .value {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #d4e0fc;
-            word-break: break-word;
-        }
-
-        /* 徽章 — 参考 .badge */
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            font-size: 0.75rem;
-            font-weight: 600;
+            font-size: 0.8rem;
             text-transform: uppercase;
-            background: #3a6ea5;
-            color: white;
-            border-radius: 0;
-            margin-left: 8px;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.5px;
         }
-
-        .badge.normal {
-            background: #2d5940;
-            color: #d4f0e0;
-        }
-
-        /* ========== 图片双栏 ========== */
-        .images-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 24px;
-            margin: 28px 0;
-        }
-
-        .image-card {
-            background: #2a2c3b;
-            border: 1px solid #3e4052;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .image-header {
-            padding: 14px 18px;
-            background: #1b1e2a;
-            border-bottom: 2px solid #3a6ea5;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .image-header h3 {
-            font-size: 1.0rem;
-            font-weight: 500;
-            color: #d0dcf0;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .image-body {
-            padding: 18px;
-            background: #1f212f;
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .image-body img {
-            max-width: 100%;
-            max-height: 350px;
-            border: 2px solid #3b5580;
-            background: #141824;
-            cursor: pointer;
-            transition: border 0.2s;
-            object-fit: contain;
-        }
-
-        .image-body img:hover {
-            border-color: #7a9fdb;
-        }
-
-        /* ========== 缺陷列表 ========== */
-        .defect-section {
-            margin: 28px 0 16px;
-            background: #2a2c3b;
-            border: 1px solid #3e4052;
-        }
-
-        .defect-header {
-            padding: 14px 20px;
-            background: #1b1e2a;
-            border-bottom: 2px solid #c05a5a; /* 警告色 */
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .defect-header h3 {
+        .value {
+            color: #1A1A1A;
             font-size: 1.1rem;
             font-weight: 500;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 0;
         }
-
-        .defect-header h3::before {
-            content: "⚠️";
-            font-size: 1.2rem;
-        }
-
-        .defect-count-badge {
-            background: #5a353f;
-            color: #ffd7d7;
-            padding: 4px 12px;
-            font-size: 0.8rem;
-            border: 1px solid #a56b6b;
-        }
-
-        .defect-list {
-            padding: 20px;
-            background: #212332;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .defect-item {
-            background: #1f2537;
-            padding: 16px 18px;
-            border-left: 8px solid #f05454;
-            border-bottom: 1px solid #3d4560;
+        .images {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 12px;
-            transition: 0.1s;
+            grid-template-columns: repeat(2,1fr);
+            gap: 30px;
+            margin: 30px 0;
         }
-
-        .defect-item:hover {
-            background: #2a3147;
+        .image-box {
+            background: #F8F8F8;
+            padding: 20px;
+            border-radius: 32px;
+            border: 1px solid #EEEEEE;
         }
-
-        /* 不同缺陷类型左边框色 (参考原样式 .defect-item.missing_hole 等) */
-        .defect-item.missing_hole { border-left-color: #f05454; }
-        .defect-item.mouse_bite { border-left-color: #8ecf8e; }
-        .defect-item.short_circuit { border-left-color: #5f9df3; }
-
-        .defect-detail {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .defect-detail .defect-label {
-            font-size: 0.7rem;
-            color: #99a6c2;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-
-        .defect-detail .defect-value {
-            font-size: 0.95rem;
-            color: #e2e8f0;
-            font-weight: 500;
-            word-break: break-word;
-        }
-
-        .defect-value strong {
-            color: #b8ceff;
+        .image-box h3 {
+            margin-top: 0;
+            margin-bottom: 16px;
+            color: #1A1A1A;
             font-weight: 600;
         }
-
-        /* 坐标特殊样式 */
-        .defect-coords {
-            font-family: 'Consolas', monospace;
-            background: #141824;
-            padding: 6px 8px;
-            border: 1px solid #3e4055;
-            font-size: 0.85rem;
-            color: #b0c6e0;
-        }
-
-        /* 无缺陷占位 */
-        .no-defect-message {
-            background: #1f2130;
-            border: 1px dashed #4b5270;
-            padding: 40px 16px;
-            text-align: center;
-            color: #6f7c9f;
-            font-size: 1rem;
-        }
-
-        /* 按钮组底部 */
-        .footer-actions {
-            margin-top: 28px;
-            padding-top: 16px;
-            border-top: 1px solid #3e4055;
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        /* ========== 模态框 (复用原样式) ========== */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 2000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(10, 12, 24, 0.95);
-        }
-        .modal-content {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-image {
-            max-width: 95%;
-            max-height: 95%;
-            object-fit: contain;
-            cursor: grab;
-            border: 3px solid #3e5580;
-        }
-        .modal-close {
-            position: absolute;
-            top: 20px;
-            right: 30px;
-            color: #c0caf0;
-            font-size: 44px;
-            font-weight: 300;
+        .image-box img {
+            max-width: 100%;
+            border-radius: 24px;
+            border: 1px solid #EEEEEE;
+            background: #fff;
             cursor: pointer;
-            z-index: 2001;
-            text-shadow: 2px 2px 6px black;
         }
-        .modal-close:hover { color: white; }
-
-        /* 自适应小屏幕 */
-        @media (max-width: 768px) {
-            body { padding: 12px; }
-            .detail-header { flex-direction: column; align-items: flex-start; }
-            .header-actions { width: 100%; }
-            .btn { flex: 1; text-align: center; }
-            .images-grid { grid-template-columns: 1fr; }
-            .defect-item { grid-template-columns: 1fr; }
+        .defect-list {
+            margin: 30px 0;
+        }
+        .defect-list h3 {
+            color: #FF6B4E;
+            border-left: 6px solid #FF6B4E;
+            padding-left: 16px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .defect-item {
+            background: #FFF8F5;
+            padding: 18px 22px;
+            margin: 12px 0;
+            border-left: 6px solid #FF6B4E;
+            border-radius: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+        .defect-item p {
+            margin: 8px 0;
+            color: #1A1A1A;
+        }
+        .btn {
+            display: inline-block;
+            padding: 14px 28px;
+            background: #1A1A1A;
+            color: white;
+            text-decoration: none;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background 0.2s;
+            margin-top: 20px;
+            margin-right: 12px;
+        }
+        .btn:hover {
+            background: #FF6B4E;
+        }
+        .btn.secondary {
+            background: #FFFFFF;
+            color: #888888;
+            border: 1px solid #EEEEEE;
+        }
+        .btn.secondary:hover {
+            background: #F8F8F8;
+        }
+        .badge {
+            display: inline-block;
+            padding: 6px 14px;
+            background: #FF6B4E;
+            color: white;
+            border-radius: 30px;
+            font-size: 0.8rem;
+        }
+        .badge.normal {
+            background: #EEEEEE;
+            color: #888888;
         }
     </style>
 </head>
 <body>
-    <div class="detail-container">
-        <!-- 头部区域 -->
-        <div class="detail-header">
-            <div class="header-title">
-                <h1>检测记录详情</h1>
-            </div>
-            <div class="header-actions">
-                <a href="/download_history_item/{{ record.id }}" class="btn btn-primary" title="下载该记录">
-                    ⬇ 下载记录
-                </a>
-            </div>
-        </div>
+    <div class="container">
+        <h1>📋 检测记录详情</h1>
 
-        <!-- 主体内容 -->
-        <div class="detail-content">
-            <!-- 信息网格 -->
-            <div class="info-grid">
-                <div class="info-card">
-                    <span class="label">📄 文件名</span>
-                    <span class="value">{{ record.filename }}</span>
-                </div>
-                <div class="info-card">
-                    <span class="label">⏱ 检测时间</span>
-                    <span class="value">{{ record.detection_time }}</span>
-                </div>
-                <div class="info-card" style="border-left-color: {{ '#f05454' if record.has_defect else '#2d5940' }};">
-                    <span class="label">⚠️ 是否有缺陷</span>
-                    <span class="value">
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="label">文件名</span>
+                <span class="value">{{ record.filename }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">检测时间</span>
+                <span class="value">{{ record.detection_time }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">是否有缺陷</span>
+                <span class="value">
+                    <span class="badge {{ 'normal' if not record.has_defect else '' }}">
                         {{ '是' if record.has_defect else '否' }}
-                        <span class="badge {{ 'normal' if not record.has_defect else '' }}">
-                            {{ '有缺陷' if record.has_defect else '正常' }}
-                        </span>
                     </span>
-                </div>
-                <div class="info-card">
-                    <span class="label">🔢 缺陷数量</span>
-                    <span class="value">{{ record.defect_count }}</span>
-                </div>
-                <div class="info-card">
-                    <span class="label">🎯 置信度阈值</span>
-                    <span class="value">{{ record.conf_threshold }}</span>
-                </div>
-                <div class="info-card">
-                    <span class="label">📐 IoU阈值</span>
-                    <span class="value">{{ record.iou_threshold }}</span>
-                </div>
+                </span>
             </div>
-
-            <!-- 图片对比区域 -->
-            <div class="images-grid">
-                <div class="image-card">
-                    <div class="image-header">
-                        <h3>📷 原始图片</h3>
-                    </div>
-                    <div class="image-body">
-                        <img src="/get_history_image/{{ record.id }}?type=original" alt="原始图片"
-                             onclick="openModal(this.src)" style="cursor: pointer;">
-                    </div>
-                </div>
-                <div class="image-card">
-                    <div class="image-header">
-                        <h3>🔍 检测图片</h3>
-                    </div>
-                    <div class="image-body">
-                        <img src="/get_history_image/{{ record.id }}?type=detected" alt="检测图片"
-                             onclick="openModal(this.src)" style="cursor: pointer;">
-                    </div>
-                </div>
+            <div class="info-item">
+                <span class="label">缺陷数量</span>
+                <span class="value">{{ record.defect_count }}</span>
             </div>
-
-            <!-- 缺陷详情区域 -->
-            <div class="defect-section">
-                <div class="defect-header">
-                    <h3>缺陷详情</h3>
-                    <span class="defect-count-badge">共 {{ record.defect_count }} 处</span>
-                </div>
-                <div class="defect-list">
-                    {% if record.defects and record.defects|length > 0 %}
-                        {% for defect in record.defects %}
-                        <!-- 动态添加缺陷类型类，用于左边框色 (需根据defect.defect_type设置类) -->
-                        <div class="defect-item
-                            {% if defect.defect_type == 'missing_hole' %}missing_hole
-                            {% elif defect.defect_type == 'mouse_bite' %}mouse_bite
-                            {% elif defect.defect_type == 'short_circuit' %}short_circuit
-                            {% endif %}">
-
-                            <div class="defect-detail">
-                                <span class="defect-label">类型</span>
-                                <span class="defect-value"><strong>{{ defect.defect_type }}</strong></span>
-                            </div>
-                            <div class="defect-detail">
-                                <span class="defect-label">置信度</span>
-                                <span class="defect-value">{{ "%.2f"|format(defect.confidence) }}</span>
-                            </div>
-                            <div class="defect-detail">
-                                <span class="defect-label">位置 (x1,y1,x2,y2)</span>
-                                <span class="defect-value defect-coords">
-                                    [{{ defect.coordinates[0] }}, {{ defect.coordinates[1] }}, {{ defect.coordinates[2] }}, {{ defect.coordinates[3] }}]
-                                </span>
-                            </div>
-                            <div class="defect-detail">
-                                <span class="defect-label">尺寸 (WxH)</span>
-                                <span class="defect-value">{{ defect.width }} x {{ defect.height }}</span>
-                            </div>
-                            {% if defect.description %}
-                            <div class="defect-detail" style="grid-column: span 2;">
-                                <span class="defect-label">描述</span>
-                                <span class="defect-value">{{ defect.description }}</span>
-                            </div>
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="no-defect-message">
-                            ✨ 该图片未检测到任何缺陷
-                        </div>
-                    {% endif %}
-                </div>
+            <div class="info-item">
+                <span class="label">置信度阈值</span>
+                <span class="value">{{ record.conf_threshold }}</span>
             </div>
-
-            <!-- 底部操作栏（可选，与头部呼应） -->
-            <div class="footer-actions">
-                <a href="/download_history_item/{{ record.id }}" class="btn btn-primary">⬇ 下载该记录</a>
+            <div class="info-item">
+                <span class="label">IoU阈值</span>
+                <span class="value">{{ record.iou_threshold }}</span>
             </div>
         </div>
-    </div>
 
-    <!-- 图片预览模态框 (复用原风格) -->
-    <div id="imageModal" class="modal" onclick="closeModalOnBg(event)">
-        <div class="modal-content">
-            <span class="modal-close" onclick="closeModal()">&times;</span>
-            <img class="modal-image" id="modalImage" src="" alt="预览">
+        <div class="images">
+            <div class="image-box">
+                <h3>📷 原始图片</h3>
+                <img src="/get_history_image/{{ record.id }}?type=original" alt="Original"
+                     onclick="window.open(this.src, '_blank')" style="cursor: pointer;">
+            </div>
+            <div class="image-box">
+                <h3>🔍 检测图片</h3>
+                <img src="/get_history_image/{{ record.id }}?type=detected" alt="Detected"
+                     onclick="window.open(this.src, '_blank')" style="cursor: pointer;">
+            </div>
+        </div>
+
+        {% if record.defects %}
+        <div class="defect-list">
+            <h3>⚠️ 缺陷详情 ({{ record.defect_count }}处)</h3>
+            {% for defect in record.defects %}
+            <div class="defect-item">
+                <p><strong>类型:</strong> {{ defect.defect_type }}</p>
+                <p><strong>置信度:</strong> {{ "%.2f"|format(defect.confidence) }}</p>
+                <p><strong>位置:</strong> [{{ defect.coordinates[0] }}, {{ defect.coordinates[1] }}, {{ defect.coordinates[2] }}, {{ defect.coordinates[3] }}]</p>
+                <p><strong>尺寸:</strong> {{ defect.width }} x {{ defect.height }}</p>
+                {% if defect.description %}
+                <p><strong>描述:</strong> {{ defect.description }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div>
+            <a href="/download_history_item/{{ record.id }}" class="btn">⬇ 下载该记录</a>
+            <a href="javascript:history.back()" class="btn secondary">↩ 返回</a>
         </div>
     </div>
-
-    <script>
-        // 模态框控制
-        const modal = document.getElementById('imageModal');
-        const modalImg = document.getElementById('modalImage');
-
-        function openModal(src) {
-            modal.style.display = 'block';
-            modalImg.src = src;
-        }
-
-        function closeModal() {
-            modal.style.display = 'none';
-            modalImg.src = '';
-        }
-
-        function closeModalOnBg(event) {
-            if (event.target === modal) {
-                closeModal();
-            }
-        }
-
-        // ESC 关闭模态框
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && modal.style.display === 'block') {
-                closeModal();
-            }
-        });
-    </script>
 </body>
 </html>
