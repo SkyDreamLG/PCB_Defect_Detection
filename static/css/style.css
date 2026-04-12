@@ -23,7 +23,7 @@ body {
     gap: 24px;
 }
 
-/* ===== 左侧控制面板 ===== */
+/* 左侧控制面板 */
 .control-panel {
     width: 380px;
     background-color: #FFFFFF;
@@ -515,7 +515,7 @@ input[type="range"]::-webkit-slider-thumb {
     font-size: 1rem;
 }
 
-/* ===== 右侧内容区域 ===== */
+/* 右侧内容区域 */
 .content-area {
     flex: 1;
     display: flex;
