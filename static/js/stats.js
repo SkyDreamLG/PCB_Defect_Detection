@@ -1,27 +1,22 @@
-// 图表实例
+//图表实例
 let defectTypeChart, ratioChart, dailyTrendChart, confidenceChart;
 
-// 分页相关变量
 let currentPage = 1;
 let pageSize = 10;
 let totalRecords = 0;
 let allDefectRecords = [];
 
-// 初始化
 document.addEventListener('DOMContentLoaded', () => {
-    // 设置默认日期范围（最近30天）
     const today = new Date();
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(today.getDate() - 30);
 
     document.getElementById('startDate').value = formatDate(thirtyDaysAgo);
     document.getElementById('endDate').value = formatDate(today);
-
-    // 加载所有数据
     loadAllData();
 });
 
-// 格式化日期
+//格式化日期
 function formatDate(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -29,18 +24,19 @@ function formatDate(date) {
     return `${year}-${month}-${day}`;
 }
 
-// 显示/隐藏加载动画
+// 控制加载遮罩
 function showLoading(show) {
     document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
 }
 
-// 加载所有数据
+
 async function loadAllData() {
     showLoading(true);
     try {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
 
+        //并行请求
         await Promise.all([
             loadOverviewStats(startDate, endDate),
             loadDefectTypeStats(startDate, endDate),
@@ -56,7 +52,7 @@ async function loadAllData() {
     }
 }
 
-// 加载概览统计（支持日期筛选）
+//概览统计
 async function loadOverviewStats(startDate, endDate) {
     try {
         let url = '/api/stats/overview';
@@ -72,14 +68,14 @@ async function loadOverviewStats(startDate, endDate) {
         document.getElementById('normalCount').textContent = data.normal_count || 0;
         document.getElementById('defectRatio').textContent = data.defect_ratio + '%';
 
-        // 更新比例图表
+        //更新图表
         updateRatioChart(data.normal_count, data.defect_count);
     } catch (error) {
         console.error('加载概览统计失败:', error);
     }
 }
 
-// 加载缺陷类型统计
+//缺陷类型统计
 async function loadDefectTypeStats(startDate, endDate) {
     try {
         let url = '/api/stats/defect_types';
@@ -97,7 +93,7 @@ async function loadDefectTypeStats(startDate, endDate) {
     }
 }
 
-// 加载每日趋势
+// 每日趋势折线图
 async function loadDailyTrend() {
     try {
         const startDate = document.getElementById('startDate').value;
@@ -112,7 +108,7 @@ async function loadDailyTrend() {
     }
 }
 
-// 加载置信度分布（支持日期筛选）
+// 置信度分布
 async function loadConfidenceDistribution(startDate, endDate) {
     try {
         let url = '/api/stats/confidence_distribution';
@@ -129,7 +125,7 @@ async function loadConfidenceDistribution(startDate, endDate) {
     }
 }
 
-// 加载所有缺陷记录（支持日期筛选）
+// 所有缺陷记录（用于表格）
 async function loadAllDefectRecords(startDate, endDate) {
     try {
         let url = '/query_history?has_defect=1';
@@ -137,28 +133,23 @@ async function loadAllDefectRecords(startDate, endDate) {
             url += `&start_date=${startDate}&end_date=${endDate}`;
         }
 
-        // 获取所有有缺陷的记录
         const response = await fetch(url);
         const data = await response.json();
 
         allDefectRecords = data.records || [];
         totalRecords = allDefectRecords.length;
 
-        // 重置到第一页
-        currentPage = 1;
+        currentPage = 1;        // 回到第一页
+        updatePagination();     // 更新分页控件
+        displayCurrentPage();   // 渲染当前页
 
-        // 更新分页控件
-        updatePagination();
-
-        // 显示当前页数据
-        displayCurrentPage();
     } catch (error) {
         console.error('加载缺陷记录失败:', error);
         showToast('加载缺陷记录失败', 'error');
     }
 }
 
-// 显示当前页数据
+// 根据currentPage和pageSize展示表格内容
 function displayCurrentPage() {
     const start = (currentPage - 1) * pageSize;
     const end = Math.min(start + pageSize, totalRecords);
@@ -180,7 +171,7 @@ function updatePaginationInfo(start, end, total) {
     }
 }
 
-// 更新分页控件
+// 生成分页按钮的HTML
 function updatePagination() {
     const totalPages = Math.ceil(totalRecords / pageSize);
     const paginationContainer = document.getElementById('pagination');
@@ -194,10 +185,10 @@ function updatePagination() {
 
     let html = '<div class="pagination-controls">';
 
-    // 上一页按钮
+    //上一页按钮
     html += `<button class="pagination-btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>`;
 
-    // 页码按钮
+    //页码按钮
     const maxVisiblePages = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
     let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
@@ -224,7 +215,7 @@ function updatePagination() {
         html += `<button class="pagination-btn" onclick="changePage(${totalPages})">${totalPages}</button>`;
     }
 
-    // 下一页按钮
+    //下一页按钮
     html += `<button class="pagination-btn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>`;
 
     html += '</div>';
@@ -251,9 +242,8 @@ window.changePageSize = () => {
     updatePagination();
 };
 
-// ========== 图表更新函数（仅修改颜色配置） ==========
 
-// 更新比例图表（环形图）
+// 更新图表（环形图）
 function updateRatioChart(normal, defect) {
     const ctx = document.getElementById('ratioChart').getContext('2d');
 
@@ -267,7 +257,7 @@ function updateRatioChart(normal, defect) {
             labels: ['合格PCB', '缺陷PCB'],
             datasets: [{
                 data: [normal, defect],
-                backgroundColor: ['#4caf7f', '#ff6b6b'],          // 柔和绿 / 亮红
+                backgroundColor: ['#4caf7f', '#ff6b6b'],
                 borderColor: ['#2d7a55', '#b24545'],
                 borderWidth: 2,
                 hoverOffset: 8
@@ -313,9 +303,9 @@ function updateDefectTypeChart(data) {
                 label: '缺陷数量',
                 data: data.map(item => item.count),
                 backgroundColor: [
-                    'rgba(255, 107, 107, 0.8)',   // missing_hole 红
-                    'rgba(142, 207, 142, 0.8)',   // mouse_bite 绿
-                    'rgba(95, 157, 243, 0.8)'     // short_circuit 蓝
+                    'rgba(255, 107, 107, 0.8)',
+                    'rgba(142, 207, 142, 0.8)',
+                    'rgba(95, 157, 243, 0.8)'
                 ],
                 borderColor: [
                     '#ff8a8a',
@@ -353,7 +343,7 @@ function updateDefectTypeChart(data) {
     });
 }
 
-// 更新每日趋势图表（折线图）
+// 每日趋势（折线图）
 function updateDailyTrendChart(data) {
     const ctx = document.getElementById('dailyTrendChart').getContext('2d');
 
@@ -424,7 +414,7 @@ function updateDailyTrendChart(data) {
     });
 }
 
-// 更新置信度分布图表（柱状图）
+// 置信度分布（柱状图）
 function updateConfidenceChart(data) {
     const ctx = document.getElementById('confidenceChart').getContext('2d');
 
@@ -472,7 +462,7 @@ function updateConfidenceChart(data) {
     });
 }
 
-// 更新缺陷详情表格
+// 缺陷类型表格
 function updateDefectDetailTable(data) {
     const tbody = document.querySelector('#defectDetailTable tbody');
     const total = data.reduce((sum, item) => sum + item.count, 0);
@@ -500,7 +490,7 @@ function updateDefectDetailTable(data) {
     tbody.innerHTML = html;
 }
 
-// 更新最新缺陷记录表格
+// 最新缺陷记录表格
 function updateRecentDefectsTable(records) {
     const tbody = document.getElementById('recentDefectsBody');
 
@@ -565,7 +555,6 @@ async function applyDateFilter() {
     }
 }
 
-// 刷新所有数据
 async function refreshAllData() {
     // 获取当前选择的日期范围
     const startDate = document.getElementById('startDate').value;
@@ -589,7 +578,7 @@ async function refreshAllData() {
     }
 }
 
-// 导出统计数据
+// 导出CSV
 async function exportStats() {
     try {
         const startDate = document.getElementById('startDate').value;
@@ -617,7 +606,7 @@ async function exportStats() {
     }
 }
 
-// 显示提示消息
+// 提示消息
 function showToast(message, type = 'info') {
     let toast = document.getElementById('toast');
     if (!toast) {
@@ -632,9 +621,8 @@ function showToast(message, type = 'info') {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// 重置日期筛选
+// 重置日期范围
 window.resetDateFilter = () => {
-    // 设置默认日期范围（最近30天）
     const today = new Date();
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(today.getDate() - 30);
@@ -642,7 +630,6 @@ window.resetDateFilter = () => {
     document.getElementById('startDate').value = formatDate(thirtyDaysAgo);
     document.getElementById('endDate').value = formatDate(today);
 
-    // 重新加载所有数据
     refreshAllData();
     showToast('筛选已重置', 'success');
 };

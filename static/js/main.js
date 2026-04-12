@@ -1,10 +1,8 @@
-// ========== 全局变量 ==========
 const POLLING_INTERVAL = 1000;
 let uploadedFiles = [], currentTaskId = null, pollingInterval = null, isPolling = false, results = [];
 let currentMode = 'detect';
 let currentResultTab = 'normal';
 
-// ========== DOM 元素 ==========
 const uploadSection = document.getElementById('uploadSection');
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
@@ -41,14 +39,13 @@ const detectMode = document.getElementById('detectMode');
 const historyMode = document.getElementById('historyMode');
 const resultTabs = document.getElementById('resultTabs');
 
-// ========== 初始化 ==========
 document.addEventListener('DOMContentLoaded', ()=>{
     confValue.textContent = confThreshold.value;
     iouValue.textContent = iouThreshold.value;
     updateLayout();
     downloadResultsBtn.disabled = true;
 
-    // 设置默认日期
+    //设置默认日期
     const today = new Date();
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(today.getDate() - 7);
@@ -57,7 +54,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
     document.getElementById('endDate').value = formatDate(today);
 });
 
-// ========== 工具函数 ==========
 function formatDate(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -70,7 +66,9 @@ function preventDefaults(e) {
     e.stopPropagation();
 }
 
-// ========== 模式切换 ==========
+
+
+//切换
 window.switchMode = (mode) => {
     currentMode = mode;
     if (mode === 'detect') {
@@ -93,7 +91,7 @@ window.switchMode = (mode) => {
     }
 };
 
-// ========== 结果标签页 ==========
+//正常/缺陷 tab
 function updateTabActive(tab) {
     const tabs = document.querySelectorAll('.tab');
     tabs.forEach((el, index) => {
@@ -152,7 +150,7 @@ function updateLayout() {
     }
 }
 
-// ========== 文件上传处理 ==========
+//文件上传处理
 confThreshold.addEventListener('input', ()=> confValue.textContent = confThreshold.value);
 iouThreshold.addEventListener('input', ()=> iouValue.textContent = iouThreshold.value);
 dropZone.addEventListener('click', ()=> fileInput.click());
@@ -230,7 +228,7 @@ function clearAllFiles() {
     showToast('清空所有文件','info');
 }
 
-// ========== 检测任务 ==========
+//检测任务
 detectBtn.addEventListener('click', async()=>{
     if(uploadedFiles.length===0) {
         showToast('请上传图片','error');
@@ -431,7 +429,7 @@ function showToast(msg,type='info') {
     setTimeout(()=>toast.classList.remove('show'),3000);
 }
 
-// ========== 历史记录查询 ==========
+//历史记录查询
 window.queryHistory = async () => {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
@@ -566,7 +564,7 @@ window.downloadHistoryItem = async (id) => {
     }
 };
 
-// ========== 大图预览 ==========
+// 大图预览
 window.showLargeImage = (src) => {
     const modal=document.getElementById('imageModal'), modalImage=document.getElementById('modalImage');
     modalImage.src=src;
@@ -634,11 +632,8 @@ modalImage.addEventListener('wheel',(e)=>{
     updateImageTransform();
 });
 
-// ========== 导出统计功能 ==========
+// 导出统计功能
 
-/**
- * 导出统计数据
- */
 window.exportStats = async () => {
     try {
         showToast('正在导出统计数据...', 'info');
@@ -663,17 +658,12 @@ window.exportStats = async () => {
     }
 };
 
-/**
- * 刷新所有数据
- */
+//刷新数据
 window.refreshAllData = async () => {
     showToast('刷新数据中...', 'info');
-    // 这里可以根据需要实现刷新逻辑
-    // 例如重新加载当前页面的数据
     location.reload();
 };
 
-// 确保 formatDate 函数存在（如果不存在则添加）
 if (typeof formatDate !== 'function') {
     window.formatDate = (date) => {
         const year = date.getFullYear();
@@ -684,7 +674,7 @@ if (typeof formatDate !== 'function') {
 }
 
 // 清除历史记录相关变量
-let clearMode = 'filtered'; // 'filtered' 或 'all'
+let clearMode = 'filtered'; // 'filtered' / 'all'
 let recordsToDelete = [];
 
 // 显示清除历史记录确认模态框
@@ -777,11 +767,9 @@ function confirmClearHistory() {
     .then(data => {
         if (data.success) {
             showToast(`成功清除 ${data.deleted_count} 条记录`, 'success');
-
-            // 刷新历史记录列表
+            //刷新历史记录列表
             refreshHistory();
-
-            // 更新统计信息（如果有统计页面）
+            //更新统计信息
             if (typeof updateStats === 'function') {
                 updateStats();
             }
@@ -802,7 +790,7 @@ function confirmClearHistory() {
     });
 }
 
-// 删除单条历史记录（可选功能）
+//删除单条历史记录
 function deleteHistoryRecord(recordId) {
     if (!confirm('确定要删除这条历史记录吗？此操作不可恢复，对应的图片文件也将被删除。')) {
         return;
@@ -833,8 +821,7 @@ function deleteHistoryRecord(recordId) {
     });
 }
 
-// 在历史记录表格的操作列添加删除按钮（需要在渲染历史记录时添加）
-// 修改 queryHistory 函数中的渲染部分
+
 function renderHistoryTable(records) {
     const tbody = document.getElementById('historyTableBody');
     const historyCount = document.getElementById('historyCount');
@@ -850,7 +837,6 @@ function renderHistoryTable(records) {
         const hasDefect = record.has_defect ? '是' : '否';
         const defectClass = record.has_defect ? 'defect-badge' : 'normal-badge';
 
-        // 缺陷信息摘要
         let defectSummary = '';
         if (record.defects && record.defects.length > 0) {
             const defectTypes = record.defects.map(d => d.defect_type).join(', ');
@@ -885,22 +871,19 @@ function renderHistoryTable(records) {
     historyCount.textContent = records.length;
 }
 
-// 修改原有的 queryHistory 函数，调用新的渲染函数
 function queryHistory() {
-    // 获取筛选条件
+    //获取筛选条件
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
     const filename = document.getElementById('filenameFilter').value;
     const hasDefect = document.getElementById('defectFilter').value;
 
-    // 构建查询参数
     const params = new URLSearchParams();
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
     if (filename) params.append('filename', filename);
     if (hasDefect !== '') params.append('has_defect', hasDefect);
 
-    // 显示加载状态
     const tbody = document.getElementById('historyTableBody');
     tbody.innerHTML = '<tr><td colspan="6" class="empty-message">加载中...</td></tr>';
 

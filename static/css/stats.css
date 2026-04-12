@@ -156,7 +156,7 @@
     box-shadow: 0 16px 30px -10px rgba(30, 74, 122, 0.1);
 }
 
-/* 卡片左侧彩色条（使用渐变） */
+/* 卡片左侧彩条 */
 .overview-card.total { background: linear-gradient(135deg, #FFFFFF 0%, #EBF8FF 100%); }
 .overview-card.defect { background: linear-gradient(135deg, #FFFFFF 0%, #FFF5F5 100%); }
 .overview-card.normal { background: linear-gradient(135deg, #FFFFFF 0%, #F0FFF4 100%); }
@@ -187,7 +187,7 @@
     line-height: 1.2;
 }
 
-/* 图表网格 - Bento Grid布局 */
+/* 图表网格 */
 .charts-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);

@@ -197,7 +197,7 @@
             overflow: hidden;
         }
 
-        /* 上半部分 - 双栏显示 */
+        /* 上半部分 */
         .video-top {
             flex: 1;
             display: flex;
@@ -251,7 +251,7 @@
             background: #FFFFFF;
         }
 
-        /* 下半部分 - 缺陷信息 */
+        /* 下半部分 */
         .video-bottom {
             height: 220px;
             background: #FFFFFF;
@@ -329,7 +329,7 @@
             background: #FFFFFF;
         }
 
-        /* 摄像头选择模态框 - 贴左边悬浮，亮色主题 */
+        /* 摄像头选择模态框 */
         .modal {
             display: none;
             position: fixed;
@@ -470,7 +470,6 @@
             padding: 12px;
         }
 
-        /* Toast 复用全局样式已在 style.css 定义 */
     </style>
 </head>
 <body>
@@ -544,7 +543,7 @@
         <div class="video-content">
             <!-- 上半部分：双栏显示 -->
             <div class="video-top">
-                <!-- 左侧：摄像头画面 -->
+                <!-- 摄像头画面 -->
                 <div class="video-card">
                     <div class="video-card-header">
                         <h3>📹 摄像头画面（电路板检测）</h3>
@@ -553,7 +552,7 @@
                         <img id="cameraFeed" class="video-frame" src="" alt="摄像头画面">
                     </div>
                 </div>
-                <!-- 右侧：YOLO处理后的图像 -->
+                <!-- YOLO处理后的图像 -->
                 <div class="video-card">
                     <div class="video-card-header">
                         <h3>🔬 YOLO缺陷检测结果</h3>
@@ -564,7 +563,7 @@
                 </div>
             </div>
 
-            <!-- 下半部分：缺陷信息列表 -->
+            <!-- 缺陷信息列表 -->
             <div class="video-bottom">
                 <div class="video-bottom-header">
                     <h3>📋 缺陷信息列表</h3>
@@ -576,7 +575,7 @@
         </div>
     </div>
 
-    <!-- 摄像头选择模态框 - 贴左边悬浮 -->
+    <!-- 摄像头选择模态框 -->
     <div id="cameraModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
@@ -586,7 +585,6 @@
             <div class="modal-body">
                 <p style="color: #718096; margin-bottom: 15px;">检测到多个摄像头：</p>
                 <div id="cameraOptions" style="display: flex; flex-direction: column; gap: 10px;">
-                    <!-- 选项会动态添加到这里 -->
                 </div>
                 <div class="modal-footer">
                     <button class="video-btn" onclick="cancelCameraSelection()" style="background: #FFFFFF; color: #718096; border: 1px solid #E2E8F0;">取消</button>
@@ -600,7 +598,7 @@
     <div id="toast" class="toast"></div>
 
     <script>
-        // 视频检测JavaScript (完整保留原逻辑)
+        //视频检测
         const video = document.createElement('video');
         let mediaStream = null;
         let sessionId = null;
@@ -610,11 +608,9 @@
         let hasYoloResult = false;
         let lastSavedDetection = null;
 
-        // 摄像头选择相关变量
         let pendingResolve = null;
         let selectedDeviceId = null;
 
-        // DOM元素
         const cameraFeed = document.getElementById('cameraFeed');
         const yoloResult = document.getElementById('yoloResult');
         const defectList = document.getElementById('defectList');
@@ -628,12 +624,12 @@
         const defectCountSpan = document.getElementById('defectCount');
         const saveCountSpan = document.getElementById('saveCount');
 
-        // 生成会话ID
+        //生成会话ID
         function generateSessionId() {
             return 'video_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
 
-        // 更新保存按钮状态
+        //更新保存按钮
         function updateSaveButton() {
             if (hasYoloResult && lastSavedDetection !== sessionId + '_' + hasYoloResult) {
                 saveBtn.disabled = false;
@@ -642,7 +638,6 @@
             }
         }
 
-        // 显示摄像头选择模态框
         function showCameraModal(devices) {
             return new Promise((resolve) => {
                 pendingResolve = resolve;
@@ -694,7 +689,6 @@
             });
         }
 
-        // 选择摄像头选项
         function selectCameraOption(deviceId) {
             selectedDeviceId = deviceId;
             document.querySelectorAll('.camera-option').forEach(opt => {
@@ -706,7 +700,7 @@
             });
         }
 
-        // 确认选择摄像头
+        //确认选择摄像头
         function confirmCameraSelection() {
             if (selectedDeviceId) {
                 const modal = document.getElementById('cameraModal');
@@ -721,7 +715,7 @@
             }
         }
 
-        // 取消选择摄像头
+        //取消选择摄像头
         function cancelCameraSelection() {
             const modal = document.getElementById('cameraModal');
             modal.style.display = 'none';
@@ -1076,7 +1070,6 @@
             defectList.innerHTML = html;
         }
 
-        // 显示提示消息
         function showToast(message, type = 'info') {
             let toast = document.getElementById('toast');
             if (!toast) {
@@ -1091,7 +1084,6 @@
             setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        // 页面关闭前清理
         window.addEventListener('beforeunload', () => {
             if (mediaStream) {
                 mediaStream.getTracks().forEach(track => track.stop());
