@@ -47,6 +47,7 @@
     align-items: center;
     gap: 6px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    white-space: nowrap;
 }
 .nav-btn:hover {
     background: #1E4A7A;

@@ -647,15 +647,29 @@ input[type="range"]::-webkit-slider-thumb {
     background-color: #F1F5F9;
 }
 
+/* 统一缩略图样式 - 128x128 */
 .thumbnail {
-    width: 64px;
-    height: 64px;
+    width: 128px;
+    height: 128px;
     object-fit: cover;
     border-radius: 16px;
     border: 1px solid #E2E8F0;
     cursor: pointer;
 }
 .thumbnail:hover {
+    border-color: #1E4A7A;
+}
+
+/* 历史记录表格中的缩略图样式 */
+.history-table td img {
+    width: 128px;
+    height: 128px;
+    object-fit: cover;
+    border-radius: 16px;
+    border: 1px solid #E2E8F0;
+    cursor: pointer;
+}
+.history-table td img:hover {
     border-color: #1E4A7A;
 }
 
